@@ -1,6 +1,8 @@
 # Build stage
 FROM python:3.11-slim AS builder
 
+ARG DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && apt-get install -y \
     libcairo2-dev \
     shared-mime-info \
@@ -24,6 +26,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Runtime stage
 FROM python:3.11-slim
+
+ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
     libcairo2 \

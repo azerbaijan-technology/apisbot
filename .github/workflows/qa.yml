@@ -65,25 +65,25 @@ jobs:
       - name: Run pyright check
         run: uv run basedpyright src/
 
-  # test:
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 15
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4.2.2
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
 
-  #     - name: Setup Python environment
-  #       uses: ./.github/actions/setup-python-env
+      - name: Setup Python environment
+        uses: ./.github/actions/setup-python-env
 
-  #     - name: Run tests with coverage
-  #       run: uv run pytest
+      - name: Run tests with coverage
+        run: uv run pytest
 
-  #     - name: Upload coverage reports
-  #       uses: actions/upload-artifact@v4.5.0
-  #       if: always()
-  #       with:
-  #         name: coverage-reports
-  #         path: |
-  #           coverage.xml
-  #           htmlcov/
-  #         retention-days: 30
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4.5.0
+        if: always()
+        with:
+          name: coverage-reports
+          path: |
+            coverage.xml
+            htmlcov/
+          retention-days: 30
