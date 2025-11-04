@@ -1,6 +1,6 @@
-FROM python:3.11-slim
+# Build stage
+FROM python:3.11-slim AS builder
 
-# Install system dependencies for CairoSVG
 RUN apt-get update && apt-get install -y \
     libcairo2-dev \
     libpango1.0-dev \
@@ -10,25 +10,40 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir uv
-
-# Set working directory
 WORKDIR /app
 
-# Copy dependency files
-COPY pyproject.toml ./
-COPY uv.lock ./
-COPY README.md ./
+COPY pyproject.toml uv.lock README.md ./
 
-# Copy application code
+ENV UV_LINK_MODE=copy
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-install-project
+
 COPY src/ ./src/
 
-# Install Python dependencies using uv
-RUN uv sync
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen
 
-# Create non-root user for security
-RUN useradd -m -u 1000 botuser && \
-    chown -R botuser:botuser /app
+# Runtime stage
+FROM python:3.11-slim
+
+# Install only runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libcairo2 \
+    libpango1.0-0 \
+    shared-mime-info \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+RUN pip install --no-cache-dir uv
+
+WORKDIR /app
+
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/src /app/src
+COPY --from=builder /app/pyproject.toml /app/uv.lock /app/README.md ./
+
+RUN useradd -m -u 1000 botuser && chown -R botuser:botuser /app
+
 USER botuser
 
-# Run the bot
-CMD ["uv", "run", "-m", "apisbot"]
+CMD ["uv", "run", "--module", "apisbot"]

@@ -1,4 +1,4 @@
-.PHONY: help install test lint run clean format check
+.PHONY: help install test lint run clean format all isort black flake8 pyright format-check lint-all
 
 # Default target
 .DEFAULT_GOAL := help
@@ -13,25 +13,52 @@ help: ## Show this help message
 
 install: ## Install all dependencies using uv
 	@echo "$(CYAN)Installing dependencies with uv...$(RESET)"
-	@command -v uv >/dev/null 2>&1 || { echo "Error: uv is not installed. Install it with: pip install uv"; exit 1; }
-	@uv pip install -e ".[dev]"
+	@command -v uv >/dev/null 2>&1 || { echo "Error: uv is not installed. Install it from https://docs.astral.sh/uv/"; exit 1; }
+	@uv sync
 	@echo "$(CYAN)✓ Dependencies installed$(RESET)"
 
-test: ## Run the test suite with pytest
-	@echo "$(CYAN)Running tests...$(RESET)"
-	@pytest || { echo "$(CYAN)Note: No tests found or tests failed$(RESET)"; exit 0; }
+test: ## Run the test suite with pytest and coverage
+	@echo "$(CYAN)Running tests with coverage...$(RESET)"
+	@uv run pytest
 	@echo "$(CYAN)✓ Tests completed$(RESET)"
 
-lint: ## Run code quality checks with pyright
-	@echo "$(CYAN)Running linter...$(RESET)"
-	@pyright src/
-	@echo "$(CYAN)✓ Linting completed$(RESET)"
+pyright: ## Run type checking with basedpyright
+	@echo "$(CYAN)Running type checker...$(RESET)"
+	@uv run basedpyright src/
+	@echo "$(CYAN)✓ Type checking completed$(RESET)"
 
-format: ## Format code (pyright is a type checker, use a formatter like black if needed)
-	@echo "$(CYAN)Note: pyright is a type checker, not a formatter$(RESET)"
-	@echo "$(CYAN)Consider adding black or autopep8 for code formatting$(RESET)"
+flake8: ## Run flake8 linter
+	@echo "$(CYAN)Running flake8...$(RESET)"
+	@uv run flake8 src/ tests/
+	@echo "$(CYAN)✓ Flake8 completed$(RESET)"
 
-check: lint test ## Run both linting and tests
+isort: ## Sort imports with isort
+	@echo "$(CYAN)Sorting imports...$(RESET)"
+	@uv run isort src/ tests/
+	@echo "$(CYAN)✓ Import sorting completed$(RESET)"
+
+black: ## Format code with black
+	@echo "$(CYAN)Formatting code with black...$(RESET)"
+	@uv run black src/ tests/
+	@echo "$(CYAN)✓ Code formatting completed$(RESET)"
+
+format: isort black ## Format code with isort and black
+	@echo "$(CYAN)✓ All formatting completed$(RESET)"
+
+format-check: ## Check code formatting without modifying files
+	@echo "$(CYAN)Checking import sorting...$(RESET)"
+	@uv run isort --check-only src/ tests/
+	@echo "$(CYAN)Checking code formatting...$(RESET)"
+	@uv run black --check --diff src/ tests/
+	@echo "$(CYAN)✓ Format check completed$(RESET)"
+
+lint: pyright flake8 ## Run all linting checks (pyright + flake8)
+	@echo "$(CYAN)✓ All linting completed$(RESET)"
+
+lint-all: format-check lint ## Run format check and all linting
+	@echo "$(CYAN)✓ All quality checks completed$(RESET)"
+
+all: lint-all test ## Run all checks (formatting, linting, and tests)
 	@echo "$(CYAN)✓ All checks passed$(RESET)"
 
 run: ## Run the Telegram bot

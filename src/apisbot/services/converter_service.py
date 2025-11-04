@@ -37,7 +37,7 @@ class ConverterService:
                 bytestring=svg_data.encode("utf-8"),
                 dpi=dpi,
             )
-            
+
             if png_bytes is None:
                 raise ValueError("Failed to convert SVG to PNG: conversion returned None")
 
