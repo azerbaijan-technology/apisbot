@@ -18,20 +18,16 @@ async def process_name(message: Message, state: FSMContext):
     if not message.text:
         await message.answer("❌ Please provide a text message with your name.")
         return
-    
+
     name = message.text.strip()
 
     # Validate name
     if not name or len(name) < 1 or len(name) > 100:
-        await message.answer(
-            "❌ Name must be between 1 and 100 characters. Please try again:"
-        )
+        await message.answer("❌ Name must be between 1 and 100 characters. Please try again:")
         return
 
     if not any(c.isalpha() for c in name):
-        await message.answer(
-            "❌ Name must contain at least one letter. Please try again:"
-        )
+        await message.answer("❌ Name must contain at least one letter. Please try again:")
         return
 
     logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: name validated")
@@ -57,7 +53,7 @@ async def process_date(message: Message, state: FSMContext):
     if not message.text:
         await message.answer("❌ Please provide a text message with your birth date.")
         return
-    
+
     date_str = message.text.strip()
 
     try:
@@ -89,7 +85,7 @@ async def process_time(message: Message, state: FSMContext):
     if not message.text:
         await message.answer("❌ Please provide a text message with your birth time.")
         return
-    
+
     time_str = message.text.strip()
 
     try:
@@ -119,14 +115,12 @@ async def process_location(message: Message, state: FSMContext):
     if not message.text:
         await message.answer("❌ Please provide a text message with your birth location.")
         return
-    
+
     location = message.text.strip()
 
     # Validate location length
     if not location or len(location) < 2 or len(location) > 200:
-        await message.answer(
-            "❌ Location must be between 2 and 200 characters. Please try again:"
-        )
+        await message.answer("❌ Location must be between 2 and 200 characters. Please try again:")
         return
 
     logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: location provided")
@@ -139,8 +133,7 @@ async def process_location(message: Message, state: FSMContext):
 
     # Show progress message
     progress_msg = await message.answer(
-        "⏳ Generating your natal chart...\n\n"
-        "This may take a few seconds. Please wait."
+        "⏳ Generating your natal chart...\n\n" "This may take a few seconds. Please wait."
     )
 
     try:
@@ -179,7 +172,7 @@ async def process_location(message: Message, state: FSMContext):
                 f"Location: {birth_data.location}\n\n"
                 "All your data has been securely deleted. 🔒\n\n"
                 "Want to generate another chart? Send /start"
-            )
+            ),
         )
 
         # Delete progress message
@@ -191,7 +184,9 @@ async def process_location(message: Message, state: FSMContext):
         logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: chart delivered, data cleared")
 
     except ValueError as e:
-        logger.error(f"User {message.from_user.id if message.from_user else 'Unknown'}: chart generation failed - {str(e)}")
+        logger.error(
+            f"User {message.from_user.id if message.from_user else 'Unknown'}: chart generation failed - {str(e)}"
+        )
 
         # Delete progress message
         await progress_msg.delete()
@@ -220,7 +215,9 @@ async def process_location(message: Message, state: FSMContext):
             await state.clear()
 
     except Exception:
-        logger.exception(f"User {message.from_user.id if message.from_user else 'Unknown'}: unexpected error during chart generation")
+        logger.exception(
+            f"User {message.from_user.id if message.from_user else 'Unknown'}: unexpected error during chart generation"
+        )
 
         # Delete progress message
         try:

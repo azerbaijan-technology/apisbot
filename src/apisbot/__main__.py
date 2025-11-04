@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from datetime import timedelta
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties

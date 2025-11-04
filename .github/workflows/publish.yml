@@ -1,0 +1,161 @@
+name: Publish Docker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Git tag to publish (e.g., v1.2.3)'
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: azerbaijan-technology/apisbot
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      tag: ${{ steps.set-tag.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag format
+        run: |
+          TAG="${{ inputs.tag }}"
+          if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "❌ Error: Tag must match semantic version format (v1.2.3)"
+            echo "   Provided: $TAG"
+            exit 1
+          fi
+          echo "✓ Tag format is valid: $TAG"
+
+      - name: Verify tag exists
+        run: |
+          TAG="${{ inputs.tag }}"
+          if ! git tag -l | grep -q "^${TAG}$"; then
+            echo "❌ Error: Tag '$TAG' does not exist in repository"
+            echo "   Available tags:"
+            git tag -l | tail -10
+            exit 1
+          fi
+          echo "✓ Tag exists: $TAG"
+
+      - name: Checkout tag
+        run: |
+          TAG="${{ inputs.tag }}"
+          git checkout "tags/$TAG"
+          echo "✓ Checked out tag: $TAG"
+
+      - name: Verify exact tag match
+        run: |
+          TAG="${{ inputs.tag }}"
+          if ! git describe --exact-match --tags HEAD 2>/dev/null | grep -q "^${TAG}$"; then
+            echo "❌ Error: HEAD is not on exact tag '$TAG'"
+            echo "   Current position: $(git describe --all HEAD)"
+            exit 1
+          fi
+          echo "✓ HEAD is exactly on tag: $TAG"
+
+      - name: Verify tag is on main branch
+        run: |
+          TAG="${{ inputs.tag }}"
+          if ! git branch -r --contains "tags/$TAG" | grep -q 'origin/main'; then
+            echo "❌ Error: Tag '$TAG' is not on main branch"
+            echo "   Branches containing this tag:"
+            git branch -r --contains "tags/$TAG"
+            exit 1
+          fi
+          echo "✓ Tag is on main branch: $TAG"
+
+      - name: Set tag output
+        id: set-tag
+        run: echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+
+  build-push:
+    needs: [validate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ needs.validate.outputs.tag }}
+
+      - name: Re-verify tag exists
+        run: |
+          TAG="${{ needs.validate.outputs.tag }}"
+          if ! git tag -l | grep -q "^${TAG}$"; then
+            echo "❌ Error: Tag '$TAG' no longer exists (deleted after validation?)"
+            exit 1
+          fi
+          echo "✓ Tag still exists: $TAG"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.11.1
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5.8.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.validate.outputs.tag }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.validate.outputs.tag }}
+            type=semver,pattern={{major}},value=${{ needs.validate.outputs.tag }}
+            type=sha,prefix=sha-
+
+      - name: Build and push Docker image
+        id: build-push
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Show build logs on failure
+        if: failure() && steps.build-push.conclusion == 'failure'
+        run: |
+          echo "❌ Docker build failed"
+          echo "   Check the build logs above for details"
+          echo "   Common issues:"
+          echo "   - Missing dependencies in Dockerfile"
+          echo "   - Invalid COPY paths"
+          echo "   - Network timeouts"
+          exit 1
+
+      - name: Show image details
+        if: success()
+        run: |
+          echo "✓ Docker image built and pushed successfully!"
+          echo ""
+          echo "Registry: ${{ env.REGISTRY }}"
+          echo "Image: ${{ env.IMAGE_NAME }}"
+          echo "Tags:"
+          echo "${{ steps.meta.outputs.tags }}" | sed 's/^/  - /'
+          echo ""
+          echo "Pull command:"
+          echo "  docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG#v}"
+        env:
+          TAG: ${{ needs.validate.outputs.tag }}

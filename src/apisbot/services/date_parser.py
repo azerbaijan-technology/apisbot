@@ -37,11 +37,13 @@ def parse_date(date_str: str) -> date:
     elif re.match(r"^[A-Za-z]+\s+\d{1,2},?\s+\d{4}$", date_str):
         # Use strptime for month name parsing
         from datetime import datetime
+
         parsed_date = datetime.strptime(date_str.replace(",", ""), "%B %d %Y").date()
 
     # Try "DD Month YYYY" format
     elif re.match(r"^\d{1,2}\s+[A-Za-z]+\s+\d{4}$", date_str):
         from datetime import datetime
+
         parsed_date = datetime.strptime(date_str, "%d %B %Y").date()
 
     else:
@@ -108,7 +110,7 @@ def parse_time(time_str: str) -> time:
         match = re.match(r"^(\d{1,2})(?::(\d{2}))?\s*([AaPp][Mm])$", time_str, re.IGNORECASE)
         if not match:
             raise ValueError("Invalid time format")
-        
+
         hour = int(match.group(1))
         minute = int(match.group(2)) if match.group(2) else 0
         period = match.group(3).upper()

@@ -63,7 +63,7 @@ The project uses a Makefile for common tasks:
 - `make install` - Install all dependencies using uv
 - `make test` - Run the test suite with pytest
 - `make lint` - Run type checking with pyright
-- `make check` - Run both linting and tests
+- `make all` - Run both linting and tests
 - `make clean` - Remove build artifacts and caches
 - `make run` - Start the Telegram bot
 

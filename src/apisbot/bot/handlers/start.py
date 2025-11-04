@@ -78,9 +78,7 @@ async def cmd_cancel(message: Message, state: FSMContext):
     current_state = await state.get_state()
 
     if current_state is None:
-        await message.answer(
-            "Nothing to cancel. Send /start to begin generating your natal chart."
-        )
+        await message.answer("Nothing to cancel. Send /start to begin generating your natal chart.")
     else:
         await state.clear()
         await message.answer(
