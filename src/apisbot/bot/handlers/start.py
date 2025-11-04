@@ -5,7 +5,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from ..states import ChartFlow
+from ..states import ChartFlow, CompositeFlow
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -85,3 +85,22 @@ async def cmd_cancel(message: Message, state: FSMContext):
             "❌ Operation cancelled. All your data has been cleared.\n\n"
             "Send /start whenever you're ready to try again."
         )
+
+
+@router.message(Command("composite"))
+async def cmd_composite(message: Message, state: FSMContext):
+    """/composite - generate composite chart between 2 subjects"""
+    logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: /composite command")
+
+    await state.clear()
+
+    await message.answer(
+        "Composite chart"
+        "I'll need a few pieces of information for 2 subjects:\n"
+        "  • Name\n"
+        "  • Birth date\n"
+        "  • Birth time\n"
+        "  • Birth location\n\n"
+    )
+
+    await state.set_state(CompositeFlow.waiting_for_name_1)

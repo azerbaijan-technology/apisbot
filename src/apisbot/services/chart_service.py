@@ -1,6 +1,12 @@
 import logging
 
-from kerykeion import AstrologicalSubject, AstrologicalSubjectFactory, ChartDataFactory, ChartDrawer
+from kerykeion import (
+    AstrologicalSubject,
+    AstrologicalSubjectFactory,
+    ChartDataFactory,
+    ChartDrawer,
+    CompositeSubjectFactory,
+)
 
 from ..models import BirthData
 
@@ -58,11 +64,11 @@ class ChartService:
             drawer = ChartDrawer(chart_data)
             svg_chart = drawer.generate_wheel_only_svg_string(minify=True, remove_css_variables=True)
 
-            logger.info("Chart generation successful")
+            logger.info("Natal chart generation successful")
             return svg_chart
 
         except Exception as e:
-            logger.error(f"Chart generation failed: {type(e).__name__}: {str(e)}")
+            logger.error(f"Natal chart generation failed: {type(e).__name__}: {str(e)}")
 
             # Provide user-friendly error messages
             if "city" in str(e).lower() or "location" in str(e).lower():
@@ -71,7 +77,80 @@ class ChartService:
                     "Please try a more specific location (e.g., 'New York, USA' instead of 'NYC')"
                 ) from e
 
-            raise ValueError(f"Failed to generate chart: {str(e)}") from e
+            raise ValueError(f"Failed to generate natal chart: {str(e)}") from e
+
+    @staticmethod
+    async def generate_composite(birth_data_1: BirthData, birth_data_2: BirthData) -> str:
+        try:
+            logger.info("Generating composite chart (no PII logged)")
+
+            # Обработка первого субъекта
+            try:
+                subject_1 = AstrologicalSubjectFactory.from_birth_data(
+                    name=birth_data_1.name,
+                    year=birth_data_1.birth_date.year,
+                    month=birth_data_1.birth_date.month,
+                    day=birth_data_1.birth_date.day,
+                    hour=birth_data_1.birth_time.hour,
+                    minute=birth_data_1.birth_time.minute,
+                    city=birth_data_1.location,
+                )
+
+                birth_data_1.latitude = subject_1.lat
+                birth_data_1.longitude = subject_1.lng
+                birth_data_1.timezone = subject_1.tz_str
+
+                logger.info(f"Geocoding for subject_1 successful, timezone: {subject_1.tz_str}")
+
+            except Exception as e:
+                logger.error(f"Geocoding for subject_1 failed: {type(e).__name__}: {str(e)}")
+                if "city" in str(e).lower() or "location" in str(e).lower():
+                    raise ValueError(
+                        f"Could not find location for first person: '{birth_data_1.location}'. "
+                        "Please try a more specific location (e.g., 'New York, USA' instead of 'NYC')"
+                    ) from e
+                raise ValueError(f"Failed to generate chart for first person: {str(e)}") from e
+
+            # Обработка второго субъекта
+            try:
+                subject_2 = AstrologicalSubjectFactory.from_birth_data(
+                    name=birth_data_2.name,
+                    year=birth_data_2.birth_date.year,
+                    month=birth_data_2.birth_date.month,
+                    day=birth_data_2.birth_date.day,
+                    hour=birth_data_2.birth_time.hour,
+                    minute=birth_data_2.birth_time.minute,
+                    city=birth_data_2.location,
+                )
+
+                birth_data_2.latitude = subject_2.lat
+                birth_data_2.longitude = subject_2.lng
+                birth_data_2.timezone = subject_2.tz_str
+
+                logger.info(f"Geocoding for subject_2 successful, timezone: {subject_2.tz_str}")
+
+            except Exception as e:
+                logger.error(f"Geocoding for subject_2 failed: {type(e).__name__}: {str(e)}")
+                if "city" in str(e).lower() or "location" in str(e).lower():
+                    raise ValueError(
+                        f"Could not find location for second person: '{birth_data_2.location}'. "
+                        "Please try a more specific location (e.g., 'New York, USA' instead of 'NYC')"
+                    ) from e
+                raise ValueError(f"Failed to generate chart for second person: {str(e)}") from e
+
+            composite_subject = CompositeSubjectFactory(subject_1, subject_2).get_midpoint_composite_subject_model()
+            chart_data = ChartDataFactory.create_composite_chart_data(composite_subject)
+
+            drawer = ChartDrawer(chart_data=chart_data)
+
+            svg_chart = drawer.generate_wheel_only_svg_string(minify=True, remove_css_variables=True)
+
+            logger.info("Composite chart generation successful")
+            return svg_chart
+
+        except Exception as e:
+            logger.error(f"Composite chart generation failed: {type(e).__name__}: {str(e)}")
+            raise
 
     @staticmethod
     async def validate_location(location: str) -> tuple[float, float, str] | None:

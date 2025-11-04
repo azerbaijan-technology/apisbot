@@ -14,7 +14,7 @@ help: ## Show this help message
 install: ## Install all dependencies using uv
 	@echo "$(CYAN)Installing dependencies with uv...$(RESET)"
 	@command -v uv >/dev/null 2>&1 || { echo "Error: uv is not installed. Install it from https://docs.astral.sh/uv/"; exit 1; }
-	@uv sync
+	@uv sync --all-extras
 	@echo "$(CYAN)✓ Dependencies installed$(RESET)"
 
 test: ## Run the test suite with pytest and coverage
@@ -58,7 +58,7 @@ lint: pyright flake8 ## Run all linting checks (pyright + flake8)
 lint-all: format-check lint ## Run format check and all linting
 	@echo "$(CYAN)✓ All quality checks completed$(RESET)"
 
-all: lint-all test ## Run all checks (formatting, linting, and tests)
+all: format lint-all test ## Run all checks (formatting, linting, and tests)
 	@echo "$(CYAN)✓ All checks passed$(RESET)"
 
 run: ## Run the Telegram bot
