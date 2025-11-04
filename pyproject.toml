@@ -48,6 +48,7 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
     "--disable-socket",
+    "--allow-unix-socket",
     "--cov=src/apisbot",
     "--cov-report=term-missing",
     "--cov-report=xml",
