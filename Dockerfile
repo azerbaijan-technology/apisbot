@@ -3,7 +3,6 @@ FROM python:3.11-slim AS builder
 
 RUN apt-get update && apt-get install -y \
     libcairo2-dev \
-    libpango1.0-dev \
     shared-mime-info \
     gcc \
     g++ \
@@ -26,10 +25,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Runtime stage
 FROM python:3.11-slim
 
-# Install only runtime dependencies
 RUN apt-get update && apt-get install -y \
     libcairo2 \
-    libpango1.0-0 \
     shared-mime-info \
     && rm -rf /var/lib/apt/lists/*
 
