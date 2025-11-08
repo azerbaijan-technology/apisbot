@@ -57,6 +57,7 @@ class TestChartService:
             hour=14,
             minute=30,
             city="New York",
+            nation=" ",
         )
         mock_chart_data_factory.create_natal_chart_data.assert_called_once_with(mock_subject)
         mock_drawer_class.assert_called_once_with(mock_chart_data)
