@@ -19,6 +19,7 @@ class BirthData:
     latitude: float | None = None
     longitude: float | None = None
     timezone: str | None = None
+    nation: str = " "
 
     def validate_name(self) -> bool:
         """Validate name is 1-100 characters with at least one letter."""

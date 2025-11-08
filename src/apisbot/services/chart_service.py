@@ -49,6 +49,7 @@ class ChartService:
                 hour=birth_data.birth_time.hour,
                 minute=birth_data.birth_time.minute,
                 city=birth_data.location,
+                nation=birth_data.nation,
             )
 
             # Update birth_data with geocoded information (for debugging/logging)

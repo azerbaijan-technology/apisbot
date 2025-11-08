@@ -146,6 +146,7 @@ async def process_location(message: Message, state: FSMContext):
             birth_date=data["birth_date"],
             birth_time=data["birth_time"],
             location=location,
+            nation=" ",
         )
 
         # Generate chart

@@ -281,6 +281,7 @@ async def process_location_2(message: Message, state: FSMContext):
             birth_date=data["birth_date_1"],
             birth_time=data["birth_time_1"],
             location=data["location_1"],
+            nation=" ",
         )
 
         birth_data_2 = BirthData(
@@ -288,6 +289,7 @@ async def process_location_2(message: Message, state: FSMContext):
             birth_date=data["birth_date_2"],
             birth_time=data["birth_time_2"],
             location=data["location_2"],
+            nation=" ",
         )
 
         # Generate composite chart
