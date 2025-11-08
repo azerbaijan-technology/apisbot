@@ -3,8 +3,8 @@ import logging
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, Message
+from kerykeion import AstrologicalSubjectFactory, KerykeionException
 
-from ...models import BirthData
 from ...services import ChartService, ConverterService, parse_date, parse_time
 from ..states import CompositeFlow
 
@@ -131,7 +131,47 @@ async def process_location_1(message: Message, state: FSMContext):
     logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: location_1 provided")
 
     # Store location for first subject
-    await state.update_data(location_1=location)
+    data = await state.get_data()
+    try:
+        subject_1 = AstrologicalSubjectFactory.from_birth_data(
+            name=data["name_1"],
+            year=data["birth_date_1"].year,
+            month=data["birth_date_1"].month,
+            day=data["birth_date_1"].day,
+            hour=data["birth_time_1"].hour,
+            minute=data["birth_time_1"].minute,
+            city=location,
+            nation=" ",
+        )
+    except (ValueError, KerykeionException) as e:
+        error_msg = str(e)
+        if "city" in error_msg.lower() or "location" in error_msg.lower() or "geonames" in error_msg.lower():
+            await state.set_state(CompositeFlow.waiting_for_location_1)
+            await message.answer(
+                f"❌ <b>Location Error for {data['name_1']} person</b>\n\n"
+                f"{error_msg}\n\n"
+                "💡 <b>Tips:</b>\n"
+                "  • Try adding the country (e.g., 'Paris, France')\n"
+                "  • Use a nearby major city if your town isn't found\n"
+                "  • Check spelling\n\n"
+                f"Please enter the birth location for the {data['name_1']} person again:"
+            )
+            return
+        await message.answer(
+            f"❌ <b>Composite Chart Generation Failed</b>\n\n"
+            f"{error_msg}\n\n"
+            "Please try again from the beginning with /composite"
+        )
+        return
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"Unexpected error occurred: {str(type(e))}")
+        await message.answer(
+            f"❌ <b>Unexpected Error</b>\n\n" f"{error_msg}\n\n" f"Please try again from the beginning with /composite"
+        )
+        return
+
+    await state.update_data(location_1=location, subject_1=subject_1)
 
     # Move to second subject
     await state.set_state(CompositeFlow.waiting_for_name_2)
@@ -275,26 +315,22 @@ async def process_location_2(message: Message, state: FSMContext):
         # Get all stored data
         data = await state.get_data()
 
-        # Create BirthData objects for both subjects
-        birth_data_1 = BirthData(
-            name=data["name_1"],
-            birth_date=data["birth_date_1"],
-            birth_time=data["birth_time_1"],
-            location=data["location_1"],
-            nation=" ",
-        )
+        subject_1 = data["subject_1"]
 
-        birth_data_2 = BirthData(
+        subject_2 = AstrologicalSubjectFactory.from_birth_data(
             name=data["name_2"],
-            birth_date=data["birth_date_2"],
-            birth_time=data["birth_time_2"],
-            location=data["location_2"],
+            year=data["birth_date_2"].year,
+            month=data["birth_date_2"].month,
+            day=data["birth_date_2"].day,
+            hour=data["birth_time_2"].hour,
+            minute=data["birth_time_2"].minute,
+            city=location,
             nation=" ",
         )
 
         # Generate composite chart
         chart_service = ChartService()
-        svg_chart = await chart_service.generate_composite(birth_data_1, birth_data_2)
+        svg_chart = await chart_service.generate_composite(subject_1, subject_2)
 
         logger.info(
             f"User {message.from_user.id if message.from_user else 'Unknown'}: composite chart generated successfully"
@@ -314,15 +350,15 @@ async def process_location_2(message: Message, state: FSMContext):
             photo=chart_file,
             caption=(
                 f"✨ <b>Composite Chart</b> ✨\n\n"
-                f"Between {birth_data_1.name} and {birth_data_2.name}\n\n"
+                f"Between {subject_1.name} and {subject_2.name}\n\n"
                 f"<b>First person:</b>\n"
-                f"Born: {birth_data_1.birth_date.strftime('%B %d, %Y')} "
-                f"at {birth_data_1.birth_time.strftime('%H:%M')}\n"
-                f"Location: {birth_data_1.location}\n\n"
+                f"Born: {data['birth_date_1'].strftime('%B %d, %Y')} "
+                f"at {data['birth_date_1'].strftime('%H:%M')}\n"
+                f"Location: {subject_1.city}\n\n"
                 f"<b>Second person:</b>\n"
-                f"Born: {birth_data_2.birth_date.strftime('%B %d, %Y')} "
-                f"at {birth_data_2.birth_time.strftime('%H:%M')}\n"
-                f"Location: {birth_data_2.location}\n\n"
+                f"Born: {data['birth_date_2'].strftime('%B %d, %Y')} "
+                f"at {data['birth_time_2'].strftime('%H:%M')}\n"
+                f"Location: {subject_2.city}\n\n"
                 "All your data has been securely deleted. 🔒\n\n"
                 "Want to generate another chart? Send /start or /composite"
             ),
@@ -338,7 +374,7 @@ async def process_location_2(message: Message, state: FSMContext):
             f"User {message.from_user.id if message.from_user else 'Unknown'}: composite chart delivered, data cleared"
         )
 
-    except ValueError as e:
+    except (ValueError, KerykeionException) as e:
         logger.error(
             f"User {message.from_user.id if message.from_user else 'Unknown'}: "
             f"composite chart generation failed - {str(e)}"
@@ -350,7 +386,7 @@ async def process_location_2(message: Message, state: FSMContext):
         # Show error with helpful message
         error_msg = str(e)
 
-        if "location" in error_msg.lower() or "city" in error_msg.lower():
+        if "location" in error_msg.lower() or "city" in error_msg.lower() or "geonames" in error_msg.lower():
             # Determine which subject has the location error
             if "first" in error_msg.lower():
                 subject = "first"
