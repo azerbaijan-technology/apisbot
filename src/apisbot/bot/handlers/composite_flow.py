@@ -1,18 +1,26 @@
+"""Composite chart flow handlers."""
+
 import logging
 
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile, Message
+from aiogram.types import BufferedInputFile, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram_dialog import DialogManager, StartMode
 from kerykeion import AstrologicalSubjectFactory, KerykeionException
 
 from ...services import ChartService, ConverterService, parse_date, parse_time
+from ...services.session_service import get_session_service
+from ..dialogs.birth_data_dialog import BirthDataDialog
 from ..states import CompositeFlow
+from .common import get_state_prompt_with_hints
 
 logger = logging.getLogger(__name__)
 router = Router()
 
+# Get session service singleton
+session_service = get_session_service()
 
-# Первый субъект
+
 @router.message(CompositeFlow.waiting_for_name_1)
 async def process_name_1(message: Message, state: FSMContext):
     """Handle name input for first subject."""
@@ -33,19 +41,31 @@ async def process_name_1(message: Message, state: FSMContext):
 
     logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: name_1 validated")
 
-    # Store name for first subject
     await state.update_data(name_1=name)
-
-    # Move to next state for first subject
     await state.set_state(CompositeFlow.waiting_for_date_1)
-    await message.answer(
-        "Great! 📅\n\n"
-        "What's the birth date of the first person?\n\n"
-        "You can use any of these formats:\n"
-        "  • YYYY-MM-DD (e.g., 1990-05-15)\n"
-        "  • DD/MM/YYYY (e.g., 15/05/1990)\n"
-        "  • Month DD, YYYY (e.g., May 15, 1990)"
+    prompt = get_state_prompt_with_hints(
+        "date_entry",
+        "Great! 📅\n\nWhat's the birth date of the first person?\n\n"
+        "You can either:\n"
+        "• Use the calendar picker below ⬇️\n"
+        "• Type the date (e.g., '1990-05-15' or 'May 15, 1990')",
     )
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text="📅 Open Calendar Picker", callback_data="open_calendar_1")]]
+    )
+
+    await message.answer(prompt, reply_markup=keyboard)
+
+
+@router.callback_query(CompositeFlow.waiting_for_date_1, lambda c: c.data == "open_calendar_1")
+async def open_calendar_dialog_1(callback: CallbackQuery, state: FSMContext, dialog_manager: DialogManager):
+    """Open calendar dialog for person 1."""
+    user_id = callback.from_user.id if callback.from_user else 0
+    logger.info(f"User {user_id}: opening calendar dialog for person 1")
+
+    await state.update_data(dialog_for_person=1)
+    await dialog_manager.start(BirthDataDialog.selecting_date, mode=StartMode.NORMAL)
+    await callback.answer()
 
 
 @router.message(CompositeFlow.waiting_for_date_1)
@@ -61,19 +81,13 @@ async def process_date_1(message: Message, state: FSMContext):
         birth_date = parse_date(date_str)
         logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: date_1 validated")
 
-        # Store date for first subject
         await state.update_data(birth_date_1=birth_date)
-
-        # Move to next state
         await state.set_state(CompositeFlow.waiting_for_time_1)
-        await message.answer(
-            "Perfect! ⏰\n\n"
-            "What time was the first person born?\n\n"
-            "You can use any of these formats:\n"
-            "  • 24-hour: HH:MM (e.g., 14:30)\n"
-            "  • 12-hour: HH:MM AM/PM (e.g., 2:30 PM)\n"
-            "  • Hour only: HH (e.g., 14 or 2 PM)"
+        prompt = get_state_prompt_with_hints(
+            "time_entry",
+            "Perfect! ⏰\n\nWhat time was the first person born?\n\n" "Type the time (e.g., '14:30' or '2:30 PM')",
         )
+        await message.answer(prompt)
 
     except ValueError as e:
         logger.warning(
@@ -95,17 +109,10 @@ async def process_time_1(message: Message, state: FSMContext):
         birth_time = parse_time(time_str)
         logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: time_1 validated")
 
-        # Store time for first subject
         await state.update_data(birth_time_1=birth_time)
-
-        # Move to next state
         await state.set_state(CompositeFlow.waiting_for_location_1)
-        await message.answer(
-            "Excellent! 🌍\n\n"
-            "Where was the first person born?\n\n"
-            "Please provide a city name (e.g., 'New York, USA' or 'London, UK').\n"
-            "Be as specific as possible for accurate results."
-        )
+        prompt = get_state_prompt_with_hints("location_entry", "Excellent! 🌍\n\nWhere was the first person born?")
+        await message.answer(prompt)
 
     except ValueError as e:
         logger.warning(
@@ -130,7 +137,6 @@ async def process_location_1(message: Message, state: FSMContext):
 
     logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: location_1 provided")
 
-    # Store location for first subject
     data = await state.get_data()
     try:
         subject_1 = AstrologicalSubjectFactory.from_birth_data(
@@ -172,8 +178,6 @@ async def process_location_1(message: Message, state: FSMContext):
         return
 
     await state.update_data(location_1=location, subject_1=subject_1)
-
-    # Move to second subject
     await state.set_state(CompositeFlow.waiting_for_name_2)
     await message.answer(
         "✅ First person's data collected!\n\n"
@@ -182,7 +186,6 @@ async def process_location_1(message: Message, state: FSMContext):
     )
 
 
-# Второй субъект (повторяем тот же flow)
 @router.message(CompositeFlow.waiting_for_name_2)
 async def process_name_2(message: Message, state: FSMContext):
     """Handle name input for second subject."""
@@ -208,14 +211,39 @@ async def process_name_2(message: Message, state: FSMContext):
 
     # Move to next state for second subject
     await state.set_state(CompositeFlow.waiting_for_date_2)
-    await message.answer(
-        "Great! 📅\n\n"
-        "What's the birth date of the second person?\n\n"
-        "You can use any of these formats:\n"
-        "  • YYYY-MM-DD (e.g., 1990-05-15)\n"
-        "  • DD/MM/YYYY (e.g., 15/05/1990)\n"
-        "  • Month DD, YYYY (e.g., May 15, 1990)"
+
+    # Use menu_service for state hints (T021) with calendar widget option
+    prompt = get_state_prompt_with_hints(
+        "date_entry",
+        "Great! 📅\n\nWhat's the birth date of the second person?\n\n"
+        "You can either:\n"
+        "• Use the calendar picker below ⬇️\n"
+        "• Type the date (e.g., '1990-05-15' or 'May 15, 1990')",
     )
+
+    # Create inline keyboard with calendar option
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text="📅 Open Calendar Picker", callback_data="open_calendar_2")]]
+    )
+
+    await message.answer(prompt, reply_markup=keyboard)
+
+
+@router.callback_query(CompositeFlow.waiting_for_date_2, lambda c: c.data == "open_calendar_2")
+async def open_calendar_dialog_2(callback: CallbackQuery, state: FSMContext, dialog_manager: DialogManager):
+    """Open calendar dialog for person 2 date and time selection.
+
+    Implements T039: Calendar widget integration for composite flow person 2.
+    """
+    user_id = callback.from_user.id if callback.from_user else 0
+    logger.info(f"User {user_id}: opening calendar dialog for person 2")
+
+    # Store person indicator
+    await state.update_data(dialog_for_person=2)
+
+    # Start the birth data dialog (calendar + time picker)
+    await dialog_manager.start(BirthDataDialog.selecting_date, mode=StartMode.NORMAL)
+    await callback.answer()
 
 
 @router.message(CompositeFlow.waiting_for_date_2)
@@ -236,14 +264,13 @@ async def process_date_2(message: Message, state: FSMContext):
 
         # Move to next state
         await state.set_state(CompositeFlow.waiting_for_time_2)
-        await message.answer(
-            "Perfect! ⏰\n\n"
-            "What time was the second person born?\n\n"
-            "You can use any of these formats:\n"
-            "  • 24-hour: HH:MM (e.g., 14:30)\n"
-            "  • 12-hour: HH:MM AM/PM (e.g., 2:30 PM)\n"
-            "  • Hour only: HH (e.g., 14 or 2 PM)"
+
+        # Use menu_service for state hints (T021)
+        prompt = get_state_prompt_with_hints(
+            "time_entry",
+            "Perfect! ⏰\n\nWhat time was the second person born?\n\n" "Type the time (e.g., '14:30' or '2:30 PM')",
         )
+        await message.answer(prompt)
 
     except ValueError as e:
         logger.warning(
@@ -270,12 +297,10 @@ async def process_time_2(message: Message, state: FSMContext):
 
         # Move to next state
         await state.set_state(CompositeFlow.waiting_for_location_2)
-        await message.answer(
-            "Excellent! 🌍\n\n"
-            "Where was the second person born?\n\n"
-            "Please provide a city name (e.g., 'New York, USA' or 'London, UK').\n"
-            "Be as specific as possible for accurate results."
-        )
+
+        # Use menu_service for state hints (T021)
+        prompt = get_state_prompt_with_hints("location_entry", "Excellent! 🌍\n\nWhere was the second person born?")
+        await message.answer(prompt)
 
     except ValueError as e:
         logger.warning(

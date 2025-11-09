@@ -1,16 +1,14 @@
 from aiogram.fsm.state import State, StatesGroup
 
 
-class ChartFlow(StatesGroup):
-    """Conversation flow states for natal chart generation.
+class ChartSelection(StatesGroup):
+    """Chart type selection state."""
 
-    States represent the progression of collecting birth information:
-    1. waiting_for_name: User provides their name
-    2. waiting_for_date: User provides birth date
-    3. waiting_for_time: User provides birth time
-    4. waiting_for_location: User provides birth location
-    5. generating_chart: Transient state while processing chart
-    """
+    selecting_chart = State()
+
+
+class ChartFlow(StatesGroup):
+    """Natal chart generation flow states."""
 
     waiting_for_name = State()
     waiting_for_date = State()
@@ -20,6 +18,8 @@ class ChartFlow(StatesGroup):
 
 
 class CompositeFlow(StatesGroup):
+    """Composite chart generation flow states."""
+
     waiting_for_name_1 = State()
     waiting_for_date_1 = State()
     waiting_for_time_1 = State()

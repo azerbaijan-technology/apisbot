@@ -9,6 +9,7 @@ from aiogram.types import Message, User
 
 from apisbot.bot.handlers.chart_flow import process_date, process_location, process_name, process_time
 from apisbot.bot.states import ChartFlow
+from apisbot.models.location import LocationData
 
 
 class TestProcessName:
@@ -69,7 +70,8 @@ class TestProcessName:
         state.update_data.assert_not_called()
         state.set_state.assert_not_called()
         message.answer.assert_called_once()
-        assert "must be between 1 and 100" in message.answer.call_args[0][0]
+        call_text = message.answer.call_args[0][0]
+        assert "cannot be empty" in call_text or "1-100 characters" in call_text
 
     @pytest.mark.asyncio
     async def test_process_name_too_long(self):
@@ -244,10 +246,22 @@ class TestProcessLocation:
     """Test process_location handler."""
 
     @pytest.mark.asyncio
+    @patch("apisbot.bot.handlers.chart_flow.InputValidationService")
     @patch("apisbot.bot.handlers.chart_flow.ChartService")
     @patch("apisbot.bot.handlers.chart_flow.ConverterService")
-    async def test_process_location_success(self, mock_converter_class, mock_chart_class):
+    async def test_process_location_success(self, mock_converter_class, mock_chart_class, mock_validation_service):
         """Test successful location processing and chart generation."""
+        # Setup validation service mock
+        mock_validation_service.validate_location = AsyncMock(
+            return_value=LocationData(
+                city="New York",
+                latitude=40.7128,
+                longitude=-74.0060,
+                timezone="America/New_York",
+                display_name="New York, United States",
+            )
+        )
+
         # Setup mocks
         mock_chart_service = MagicMock()
         mock_chart_service.generate_chart = AsyncMock(return_value="<svg>chart</svg>")
@@ -284,8 +298,21 @@ class TestProcessLocation:
         state.clear.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_process_location_too_short(self):
+    @patch("apisbot.bot.handlers.chart_flow.InputValidationService")
+    async def test_process_location_too_short(self, mock_validation_service):
         """Test location that's too short."""
+        from apisbot.models.errors import ValidationError
+
+        # Mock validation to return error
+        mock_validation_service.validate_location = AsyncMock(
+            return_value=ValidationError(
+                field_name="location",
+                message="Location too short",
+                remediation="Please provide at least 2 characters",
+                user_input="A",
+            )
+        )
+
         message = MagicMock(spec=Message)
         message.text = "A"
         message.from_user = User(id=123, is_bot=False, first_name="Test")
@@ -298,11 +325,23 @@ class TestProcessLocation:
 
         state.update_data.assert_not_called()
         message.answer.assert_called_once()
-        assert "between 2 and 200" in message.answer.call_args[0][0]
 
     @pytest.mark.asyncio
-    async def test_process_location_too_long(self):
+    @patch("apisbot.bot.handlers.chart_flow.InputValidationService")
+    async def test_process_location_too_long(self, mock_validation_service):
         """Test location that's too long."""
+        from apisbot.models.errors import ValidationError
+
+        # Mock validation to return error
+        mock_validation_service.validate_location = AsyncMock(
+            return_value=ValidationError(
+                field_name="location",
+                message="Location too long",
+                remediation="Please provide at most 200 characters",
+                user_input="A" * 201,
+            )
+        )
+
         message = MagicMock(spec=Message)
         message.text = "A" * 201
         message.from_user = User(id=123, is_bot=False, first_name="Test")
@@ -330,38 +369,56 @@ class TestProcessLocation:
         assert "text message" in message.answer.call_args[0][0].lower()
 
     @pytest.mark.asyncio
-    @patch("apisbot.bot.handlers.chart_flow.ChartService")
-    async def test_process_location_geocoding_error(self, mock_chart_class):
+    @patch("apisbot.bot.handlers.chart_flow.InputValidationService")
+    async def test_process_location_geocoding_error(self, mock_validation_service):
         """Test location geocoding error."""
-        mock_chart_service = MagicMock()
-        mock_chart_service.generate_chart = AsyncMock(side_effect=ValueError("Could not find location"))
-        mock_chart_class.return_value = mock_chart_service
+        from apisbot.models.errors import ValidationError
+
+        # Mock validation to return geocoding error
+        mock_validation_service.validate_location = AsyncMock(
+            return_value=ValidationError(
+                field_name="location",
+                message="Could not find location",
+                remediation="Please try a different location",
+                user_input="InvalidLocation123",
+            )
+        )
 
         message = MagicMock(spec=Message)
         message.text = "InvalidLocation123"
         message.from_user = User(id=123, is_bot=False, first_name="Test")
-        message.answer = AsyncMock(return_value=MagicMock(delete=AsyncMock()))
+        message.answer = AsyncMock()
 
         state = MagicMock(spec=FSMContext)
         state.update_data = AsyncMock()
         state.set_state = AsyncMock()
-        state.get_data = AsyncMock(
-            return_value={
-                "name": "John Doe",
-                "birth_date": date(1990, 5, 15),
-                "birth_time": time(14, 30),
-            }
-        )
 
         await process_location(message, state)
 
-        # Should return to location state
-        state.set_state.assert_called_with(ChartFlow.waiting_for_location)
+        # Should show error, not proceed
+        state.update_data.assert_not_called()
+        message.answer.assert_called_once()
 
     @pytest.mark.asyncio
+    @patch("apisbot.bot.handlers.chart_flow.InputValidationService")
     @patch("apisbot.bot.handlers.chart_flow.ChartService")
-    async def test_process_location_generic_error(self, mock_chart_class):
+    @patch("apisbot.bot.handlers.chart_flow.ConverterService")
+    async def test_process_location_generic_error(
+        self, mock_converter_class, mock_chart_class, mock_validation_service
+    ):
         """Test generic error during chart generation."""
+        # Mock validation to succeed
+        mock_validation_service.validate_location = AsyncMock(
+            return_value=LocationData(
+                city="New York",
+                latitude=40.7128,
+                longitude=-74.0060,
+                timezone="America/New_York",
+                display_name="New York, United States",
+            )
+        )
+
+        # Mock chart service to fail
         mock_chart_service = MagicMock()
         mock_chart_service.generate_chart = AsyncMock(side_effect=ValueError("Some other error"))
         mock_chart_class.return_value = mock_chart_service
@@ -381,17 +438,32 @@ class TestProcessLocation:
                 "birth_time": time(14, 30),
             }
         )
-        state.clear = AsyncMock()
 
         await process_location(message, state)
 
-        # Should clear state
+        # Generic error (not location-related) should clear state
         state.clear.assert_called_once()
 
     @pytest.mark.asyncio
+    @patch("apisbot.bot.handlers.chart_flow.InputValidationService")
     @patch("apisbot.bot.handlers.chart_flow.ChartService")
-    async def test_process_location_unexpected_error(self, mock_chart_class):
-        """Test unexpected error during chart generation."""
+    @patch("apisbot.bot.handlers.chart_flow.ConverterService")
+    async def test_process_location_unexpected_error(
+        self, mock_converter_class, mock_chart_class, mock_validation_service
+    ):
+        """Test unexpected error during processing."""
+        # Mock validation to succeed
+        mock_validation_service.validate_location = AsyncMock(
+            return_value=LocationData(
+                city="New York",
+                latitude=40.7128,
+                longitude=-74.0060,
+                timezone="America/New_York",
+                display_name="New York, United States",
+            )
+        )
+
+        # Mock chart service to fail with unexpected error
         mock_chart_service = MagicMock()
         mock_chart_service.generate_chart = AsyncMock(side_effect=Exception("Unexpected error"))
         mock_chart_class.return_value = mock_chart_service
@@ -402,8 +474,8 @@ class TestProcessLocation:
         message.answer = AsyncMock(return_value=MagicMock(delete=AsyncMock()))
 
         state = MagicMock(spec=FSMContext)
-        state.update_data = AsyncMock()
         state.set_state = AsyncMock()
+        state.clear = AsyncMock()
         state.get_data = AsyncMock(
             return_value={
                 "name": "John Doe",
@@ -411,9 +483,8 @@ class TestProcessLocation:
                 "birth_time": time(14, 30),
             }
         )
-        state.clear = AsyncMock()
 
         await process_location(message, state)
 
-        # Should clear state
+        # Unexpected error should clear state
         state.clear.assert_called_once()
