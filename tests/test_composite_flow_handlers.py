@@ -1,4 +1,4 @@
-"""Tests for composite_flow handlers - basic coverage."""
+"""Tests for composite_flow handlers."""
 
 from datetime import date, time
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -73,8 +73,16 @@ class TestCompositeFlowPerson1:
         state.set_state.assert_called_once_with(CompositeFlow.waiting_for_location_1)
 
     @pytest.mark.asyncio
-    async def test_process_location_1(self):
+    @patch("apisbot.bot.handlers.composite_flow.AstrologicalSubjectFactory")
+    async def test_process_location_1(self, mock_subject_factory):
         """Test location input for person 1."""
+        # Mock subject creation to succeed
+        mock_subject = MagicMock()
+        mock_subject.lat = 40.7128
+        mock_subject.lng = -74.0060
+        mock_subject.tz_str = "America/New_York"
+        mock_subject_factory.from_birth_data.return_value = mock_subject
+
         message = MagicMock(spec=Message)
         message.text = "New York"
         message.from_user = User(id=123, is_bot=False, first_name="Test")
@@ -83,6 +91,13 @@ class TestCompositeFlowPerson1:
         state = MagicMock(spec=FSMContext)
         state.update_data = AsyncMock()
         state.set_state = AsyncMock()
+        state.get_data = AsyncMock(
+            return_value={
+                "name_1": "Person One",
+                "birth_date_1": date(1990, 5, 15),
+                "birth_time_1": time(14, 30),
+            }
+        )
 
         await process_location_1(message, state)
 
@@ -143,10 +158,19 @@ class TestCompositeFlowPerson2:
         state.set_state.assert_called_once_with(CompositeFlow.waiting_for_location_2)
 
     @pytest.mark.asyncio
+    @patch("apisbot.bot.handlers.composite_flow.AstrologicalSubjectFactory")
     @patch("apisbot.bot.handlers.composite_flow.ChartService")
     @patch("apisbot.bot.handlers.composite_flow.ConverterService")
-    async def test_process_location_2_success(self, mock_converter_class, mock_chart_class):
+    async def test_process_location_2_success(self, mock_converter_class, mock_chart_class, mock_subject_factory):
         """Test successful composite chart generation."""
+        # Mock subject creation to succeed
+        mock_subject_2 = MagicMock()
+        mock_subject_2.name = "Person Two"
+        mock_subject_2.lat = 51.5074
+        mock_subject_2.lng = -0.1278
+        mock_subject_2.tz_str = "Europe/London"
+        mock_subject_factory.from_birth_data.return_value = mock_subject_2
+
         # Setup mocks
         mock_chart_service = MagicMock()
         mock_chart_service.generate_composite = AsyncMock(return_value="<svg>composite chart</svg>")
@@ -162,6 +186,13 @@ class TestCompositeFlowPerson2:
         message.answer = AsyncMock(return_value=MagicMock(delete=AsyncMock()))
         message.answer_photo = AsyncMock()
 
+        # Create mock subject_1 (from first person's data)
+        mock_subject_1 = MagicMock()
+        mock_subject_1.name = "Person One"
+        mock_subject_1.lat = 40.7128
+        mock_subject_1.lng = -74.0060
+        mock_subject_1.tz_str = "America/New_York"
+
         state = MagicMock(spec=FSMContext)
         state.update_data = AsyncMock()
         state.set_state = AsyncMock()
@@ -171,10 +202,10 @@ class TestCompositeFlowPerson2:
                 "birth_date_1": date(1990, 5, 15),
                 "birth_time_1": time(14, 30),
                 "location_1": "New York",
+                "subject_1": mock_subject_1,
                 "name_2": "Person Two",
                 "birth_date_2": date(1985, 12, 25),
                 "birth_time_2": time(8, 0),
-                "location_2": "London, UK",  # Added missing location_2
             }
         )
         state.clear = AsyncMock()

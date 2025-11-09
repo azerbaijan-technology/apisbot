@@ -1,3 +1,3 @@
-from .chart_states import ChartFlow, CompositeFlow
+from .chart_states import ChartFlow, ChartSelection, CompositeFlow
 
-__all__ = ["ChartFlow", "CompositeFlow"]
+__all__ = ["ChartFlow", "ChartSelection", "CompositeFlow"]

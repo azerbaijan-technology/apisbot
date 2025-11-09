@@ -5,8 +5,12 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram_dialog import setup_dialogs
+
+from apisbot.bot.commands.start import set_start_commands
 
 # Import handlers
+from .bot.dialogs import get_birth_data_dialog
 from .bot.handlers import chart_flow, composite_flow, start
 from .bot.middlewares import LoggingMiddleware
 from .config import get_settings
@@ -32,6 +36,7 @@ async def main():
         token=settings.bot_token,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
+    await set_start_commands(bot)
 
     # Create FSM storage with session timeout
     storage = MemoryStorage()
@@ -47,7 +52,15 @@ async def main():
     dp.include_router(chart_flow.router)
     dp.include_router(composite_flow.router)
 
+    # Register dialogs for calendar and time picker widgets (T037-T038)
+    birth_data_dialog = get_birth_data_dialog()
+    dp.include_router(birth_data_dialog)
+
+    # Setup aiogram-dialog
+    setup_dialogs(dp)
+
     logger.info(f"Bot configured with session timeout: {settings.session_timeout}s")
+    logger.info("Dialogs registered: birth_data_dialog (calendar + time picker)")
     logger.info("Starting polling...")
 
     try:

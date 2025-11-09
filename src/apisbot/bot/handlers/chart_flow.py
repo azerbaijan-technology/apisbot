@@ -1,166 +1,219 @@
+"""Natal chart flow handlers."""
+
 import logging
 
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile, Message
+from aiogram.types import BufferedInputFile, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram_dialog import DialogManager, StartMode
 
 from ...models import BirthData
-from ...services import ChartService, ConverterService, parse_date, parse_time
+from ...models.errors import ValidationError
+from ...services import ChartService, ConverterService, InputValidationService
+from ...services.session_service import get_session_service
+from ..dialogs.birth_data_dialog import BirthDataDialog
 from ..states import ChartFlow
+from ..widgets.time_picker import TimePickerWidget
+from .common import get_state_prompt_with_hints
 
 logger = logging.getLogger(__name__)
 router = Router()
 
+# Get session service singleton
+session_service = get_session_service()
+
 
 @router.message(ChartFlow.waiting_for_name)
 async def process_name(message: Message, state: FSMContext):
-    """Handle name input during chart flow."""
+    """Handle name input."""
+    user_id = message.from_user.id if message.from_user else 0
+
     if not message.text:
         await message.answer("❌ Please provide a text message with your name.")
         return
 
-    name = message.text.strip()
+    result = InputValidationService.validate_name(message.text)
 
-    # Validate name
-    if not name or len(name) < 1 or len(name) > 100:
-        await message.answer("❌ Name must be between 1 and 100 characters. Please try again:")
+    if isinstance(result, ValidationError):
+        await message.answer(f"❌ {result}")
         return
 
-    if not any(c.isalpha() for c in name):
-        await message.answer("❌ Name must contain at least one letter. Please try again:")
-        return
+    validated_name = result
+    logger.info(f"User {user_id}: name validated")
 
-    logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: name validated")
-
-    # Store name
-    await state.update_data(name=name)
-
-    # Move to next state
+    await state.update_data(name=validated_name)
     await state.set_state(ChartFlow.waiting_for_date)
-    await message.answer(
-        f"Great, {name}! 📅\n\n"
-        "What's your birth date?\n\n"
-        "You can use any of these formats:\n"
-        "  • YYYY-MM-DD (e.g., 1990-05-15)\n"
-        "  • DD/MM/YYYY (e.g., 15/05/1990)\n"
-        "  • Month DD, YYYY (e.g., May 15, 1990)"
+    prompt = get_state_prompt_with_hints(
+        "date_entry",
+        f"Great, {validated_name}! 📅\n\nWhat's your birth date?\n\n"
+        "You can either:\n"
+        "• Use the calendar picker below ⬇️\n"
+        "• Type the date (e.g., '1990-05-15' or 'May 15, 1990')",
     )
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text="📅 Open Calendar Picker", callback_data="open_calendar")]]
+    )
+
+    await message.answer(prompt, reply_markup=keyboard)
+
+
+@router.callback_query(ChartFlow.waiting_for_date, lambda c: c.data == "open_calendar")
+async def open_calendar_dialog(callback: CallbackQuery, state: FSMContext, dialog_manager: DialogManager):
+    """Open calendar dialog for date and time selection."""
+    user_id = callback.from_user.id if callback.from_user else 0
+    logger.info(f"User {user_id}: opening calendar dialog")
+
+    await dialog_manager.start(BirthDataDialog.selecting_date, mode=StartMode.NORMAL)
+    await callback.answer()
 
 
 @router.message(ChartFlow.waiting_for_date)
 async def process_date(message: Message, state: FSMContext):
-    """Handle birth date input during chart flow."""
+    """Handle birth date input."""
+    user_id = message.from_user.id if message.from_user else 0
+
     if not message.text:
         await message.answer("❌ Please provide a text message with your birth date.")
         return
 
-    date_str = message.text.strip()
+    result = await InputValidationService.validate_date(message.text)
 
-    try:
-        birth_date = parse_date(date_str)
-        logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: date validated")
+    if isinstance(result, ValidationError):
+        await message.answer(f"❌ {result}")
+        return
 
-        # Store date
-        await state.update_data(birth_date=birth_date)
+    date_data = result
+    logger.info(f"User {user_id}: date validated")
 
-        # Move to next state
-        await state.set_state(ChartFlow.waiting_for_time)
-        await message.answer(
-            "Perfect! ⏰\n\n"
-            "What time were you born?\n\n"
-            "You can use any of these formats:\n"
-            "  • 24-hour: HH:MM (e.g., 14:30)\n"
-            "  • 12-hour: HH:MM AM/PM (e.g., 2:30 PM)\n"
-            "  • Hour only: HH (e.g., 14 or 2 PM)"
-        )
+    await state.update_data(birth_date=date_data.birth_date)
+    await state.set_state(ChartFlow.waiting_for_time)
+    prompt = get_state_prompt_with_hints(
+        "time_entry",
+        "Perfect! ⏰\n\nWhat time were you born?\n\n" "Type the time (e.g., '14:30' or '2:30 PM')",
+    )
+    await message.answer(prompt)
 
-    except ValueError as e:
-        logger.warning(f"User {message.from_user.id if message.from_user else 'Unknown'}: invalid date format")
-        await message.answer(f"❌ {str(e)}\n\nPlease try again:")
+
+@router.callback_query(ChartFlow.waiting_for_time, lambda c: c.data and c.data.startswith("time_hour:"))
+async def process_time_hour_selection(callback: CallbackQuery, state: FSMContext):
+    """Handle hour selection from time picker widget."""
+    user_id = callback.from_user.id if callback.from_user else 0
+
+    data = await state.get_data()
+    await TimePickerWidget.handle_hour_selection(callback, data)
+    await state.update_data(**data)
+
+    logger.info(f"User {user_id}: hour selected via time picker")
+
+
+@router.callback_query(ChartFlow.waiting_for_time, lambda c: c.data and c.data.startswith("time_minute:"))
+async def process_time_minute_selection(callback: CallbackQuery, state: FSMContext):
+    """Handle minute selection from time picker widget."""
+    user_id = callback.from_user.id if callback.from_user else 0
+
+    data = await state.get_data()
+    selected_time = await TimePickerWidget.handle_minute_selection(callback, data)
+
+    if selected_time:
+        await state.update_data(birth_time=selected_time)
+        logger.info(f"User {user_id}: time selected via time picker - {selected_time}")
+
+        await state.set_state(ChartFlow.waiting_for_location)
+
+        prompt = get_state_prompt_with_hints("location_entry", "Excellent! 🌍\n\nFinally, where were you born?")
+
+        if callback.message and not isinstance(callback.message, __import__("aiogram.types").InaccessibleMessage):
+            await callback.message.answer(prompt)
+
+
+@router.callback_query(ChartFlow.waiting_for_time, lambda c: c.data == "time_manual")
+async def process_time_manual_entry(callback: CallbackQuery, state: FSMContext):
+    """Handle manual time entry option from time picker."""
+    user_id = callback.from_user.id if callback.from_user else 0
+
+    logger.info(f"User {user_id}: chose manual time entry")
+
+    prompt = get_state_prompt_with_hints(
+        "time_entry", "⏰ Please type your birth time\n\n" "Examples: '14:30', '2:30 PM', '09:15'"
+    )
+
+    from aiogram.types import InaccessibleMessage
+
+    if callback.message and not isinstance(callback.message, InaccessibleMessage):
+        await callback.message.edit_text(prompt)
+
+    await callback.answer()
 
 
 @router.message(ChartFlow.waiting_for_time)
 async def process_time(message: Message, state: FSMContext):
-    """Handle birth time input during chart flow."""
+    """Handle birth time text input."""
+    user_id = message.from_user.id if message.from_user else 0
+
     if not message.text:
         await message.answer("❌ Please provide a text message with your birth time.")
         return
 
-    time_str = message.text.strip()
+    result = await InputValidationService.validate_time(message.text)
 
-    try:
-        birth_time = parse_time(time_str)
-        logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: time validated")
+    if isinstance(result, ValidationError):
+        await message.answer(f"❌ {result}")
+        return
 
-        # Store time
-        await state.update_data(birth_time=birth_time)
+    time_data = result
+    logger.info(f"User {user_id}: time validated (text input)")
 
-        # Move to next state
-        await state.set_state(ChartFlow.waiting_for_location)
-        await message.answer(
-            "Excellent! 🌍\n\n"
-            "Finally, where were you born?\n\n"
-            "Please provide a city name (e.g., 'New York, USA' or 'London, UK').\n"
-            "Be as specific as possible for accurate results."
-        )
-
-    except ValueError as e:
-        logger.warning(f"User {message.from_user.id if message.from_user else 'Unknown'}: invalid time format")
-        await message.answer(f"❌ {str(e)}\n\nPlease try again:")
+    await state.update_data(birth_time=time_data.birth_time)
+    await state.set_state(ChartFlow.waiting_for_location)
+    prompt = get_state_prompt_with_hints("location_entry", "Excellent! 🌍\n\nFinally, where were you born?")
+    await message.answer(prompt)
 
 
 @router.message(ChartFlow.waiting_for_location)
 async def process_location(message: Message, state: FSMContext):
     """Handle birth location input and generate chart."""
+    user_id = message.from_user.id if message.from_user else 0
+
     if not message.text:
         await message.answer("❌ Please provide a text message with your birth location.")
         return
 
-    location = message.text.strip()
+    result = await InputValidationService.validate_location(message.text)
 
-    # Validate location length
-    if not location or len(location) < 2 or len(location) > 200:
-        await message.answer("❌ Location must be between 2 and 200 characters. Please try again:")
+    if isinstance(result, ValidationError):
+        await message.answer(f"❌ {result}")
         return
 
-    logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: location provided")
+    location_data = result
+    logger.info(f"User {user_id}: location validated and geocoded")
 
-    # Store location
-    await state.update_data(location=location)
-
-    # Move to generating state
     await state.set_state(ChartFlow.generating_chart)
-
-    # Show progress message
     progress_msg = await message.answer(
         "⏳ Generating your natal chart...\n\n" "This may take a few seconds. Please wait."
     )
 
     try:
-        # Get all stored data
         data = await state.get_data()
-
-        # Create BirthData object
         birth_data = BirthData(
             name=data["name"],
             birth_date=data["birth_date"],
             birth_time=data["birth_time"],
-            location=location,
+            location=location_data.city,
+            latitude=location_data.latitude,
+            longitude=location_data.longitude,
+            timezone=location_data.timezone,
+            nation=" ",
         )
 
-        # Generate chart
         chart_service = ChartService()
         svg_chart = await chart_service.generate_chart(birth_data)
 
-        logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: chart generated successfully")
+        logger.info(f"User {user_id}: chart generated successfully")
 
-        # Convert to PNG
         converter_service = ConverterService()
         png_bytes = await converter_service.svg_to_png(svg_chart)
 
-        logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: chart converted to PNG")
-
-        # Send chart to user
+        logger.info(f"User {user_id}: chart converted to PNG")
         chart_file = BufferedInputFile(png_bytes, filename="natal_chart.png")
         await message.answer_photo(
             photo=chart_file,
@@ -175,23 +228,19 @@ async def process_location(message: Message, state: FSMContext):
             ),
         )
 
-        # Delete progress message
         await progress_msg.delete()
-
-        # Clear state and all data (privacy)
         await state.clear()
 
-        logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: chart delivered, data cleared")
+        if user_id:
+            await session_service.clear_session(user_id)
+
+        logger.info(f"User {user_id}: chart delivered, all data cleared")
 
     except ValueError as e:
-        logger.error(
-            f"User {message.from_user.id if message.from_user else 'Unknown'}: chart generation failed - {str(e)}"
-        )
+        logger.error(f"User {user_id}: chart generation failed - {str(e)}")
 
-        # Delete progress message
         await progress_msg.delete()
 
-        # Show error with helpful message
         error_msg = str(e)
 
         if "location" in error_msg.lower() or "city" in error_msg.lower():
@@ -204,7 +253,6 @@ async def process_location(message: Message, state: FSMContext):
                 "  • Check spelling\n\n"
                 "Please enter your birth location again:"
             )
-            # Go back to location state
             await state.set_state(ChartFlow.waiting_for_location)
         else:
             await message.answer(
@@ -213,13 +261,12 @@ async def process_location(message: Message, state: FSMContext):
                 "Please try again from the beginning with /start"
             )
             await state.clear()
+            if user_id:
+                await session_service.clear_session(user_id)
 
     except Exception:
-        logger.exception(
-            f"User {message.from_user.id if message.from_user else 'Unknown'}: unexpected error during chart generation"
-        )
+        logger.exception(f"User {user_id}: unexpected error during chart generation")
 
-        # Delete progress message
         try:
             await progress_msg.delete()
         except Exception:
@@ -232,3 +279,5 @@ async def process_location(message: Message, state: FSMContext):
             "If the problem persists, contact support."
         )
         await state.clear()
+        if user_id:
+            await session_service.clear_session(user_id)

@@ -57,6 +57,7 @@ class TestChartService:
             hour=14,
             minute=30,
             city="New York",
+            nation=" ",
         )
         mock_chart_data_factory.create_natal_chart_data.assert_called_once_with(mock_subject)
         mock_drawer_class.assert_called_once_with(mock_chart_data)
@@ -96,12 +97,12 @@ class TestChartService:
             await ChartService.generate_chart(birth_data)
 
     @pytest.mark.asyncio
+    @patch("apisbot.services.chart_service.ChartService._create_subject")
     @patch("apisbot.services.chart_service.CompositeSubjectFactory")
-    @patch("apisbot.services.chart_service.AstrologicalSubjectFactory")
     @patch("apisbot.services.chart_service.ChartDataFactory")
     @patch("apisbot.services.chart_service.ChartDrawer")
     async def test_generate_composite_success(
-        self, mock_drawer_class, mock_chart_data_factory, mock_subject_factory, mock_composite_factory_class
+        self, mock_drawer_class, mock_chart_data_factory, mock_composite_factory_class, mock_create_subject
     ):
         """Test successful composite chart generation."""
         # Setup mocks for subjects
@@ -115,7 +116,7 @@ class TestChartService:
         mock_subject_2.lng = -0.1278
         mock_subject_2.tz_str = "Europe/London"
 
-        mock_subject_factory.from_birth_data.side_effect = [mock_subject_1, mock_subject_2]
+        mock_create_subject.side_effect = [mock_subject_1, mock_subject_2]
 
         # Setup composite mock
         mock_composite_subject = MagicMock()
@@ -144,25 +145,26 @@ class TestChartService:
             location="London",
         )
 
-        # Execute
-        result = await ChartService.generate_composite(birth_data_1, birth_data_2)
+        # Execute using generate_chart_by_type
+        from apisbot.models.chart_selection import ChartSelection
+
+        result = await ChartService.generate_chart_by_type(ChartSelection.COMPOSITE, [birth_data_1, birth_data_2])
 
         # Verify
         assert result == "<svg>composite chart</svg>"
-        assert birth_data_1.latitude == 40.7128
-        assert birth_data_2.latitude == 51.5074
+        assert mock_create_subject.call_count == 2
 
     @pytest.mark.asyncio
-    @patch("apisbot.services.chart_service.AstrologicalSubjectFactory")
-    async def test_generate_composite_first_person_location_error(self, mock_subject_factory):
+    @patch("apisbot.services.chart_service.ChartService._create_subject")
+    async def test_generate_composite_first_person_location_error(self, mock_create_subject):
         """Test composite chart with first person's location error."""
-        mock_subject_factory.from_birth_data.side_effect = Exception("city not found")
+        mock_create_subject.side_effect = ValueError("Could not find location 'InvalidCity1'")
 
         birth_data_1 = BirthData(
             name="Person 1",
             birth_date=date(1990, 5, 15),
             birth_time=time(14, 30),
-            location="InvalidLocation",
+            location="InvalidCity1",
         )
         birth_data_2 = BirthData(
             name="Person 2",
@@ -171,20 +173,21 @@ class TestChartService:
             location="London",
         )
 
-        with pytest.raises(ValueError, match="Could not find location for first person"):
-            await ChartService.generate_composite(birth_data_1, birth_data_2)
+        from apisbot.models.chart_selection import ChartSelection
+
+        with pytest.raises(ValueError, match="Could not find location"):
+            await ChartService.generate_chart_by_type(ChartSelection.COMPOSITE, [birth_data_1, birth_data_2])
 
     @pytest.mark.asyncio
-    @patch("apisbot.services.chart_service.AstrologicalSubjectFactory")
-    async def test_generate_composite_second_person_location_error(self, mock_subject_factory):
+    @patch("apisbot.services.chart_service.ChartService._create_subject")
+    async def test_generate_composite_second_person_location_error(self, mock_create_subject):
         """Test composite chart with second person's location error."""
-        # First call succeeds, second fails
         mock_subject_1 = MagicMock()
         mock_subject_1.lat = 40.7128
         mock_subject_1.lng = -74.0060
         mock_subject_1.tz_str = "America/New_York"
 
-        mock_subject_factory.from_birth_data.side_effect = [mock_subject_1, Exception("city not found")]
+        mock_create_subject.side_effect = [mock_subject_1, ValueError("Could not find location 'InvalidCity2'")]
 
         birth_data_1 = BirthData(
             name="Person 1",
@@ -196,11 +199,13 @@ class TestChartService:
             name="Person 2",
             birth_date=date(1985, 12, 25),
             birth_time=time(8, 0),
-            location="InvalidLocation",
+            location="InvalidCity2",
         )
 
-        with pytest.raises(ValueError, match="Could not find location for second person"):
-            await ChartService.generate_composite(birth_data_1, birth_data_2)
+        from apisbot.models.chart_selection import ChartSelection
+
+        with pytest.raises(ValueError, match="Could not find location"):
+            await ChartService.generate_chart_by_type(ChartSelection.COMPOSITE, [birth_data_1, birth_data_2])
 
     @pytest.mark.asyncio
     @patch("apisbot.services.chart_service.AstrologicalSubject")

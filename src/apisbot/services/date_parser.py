@@ -52,15 +52,15 @@ def parse_date(date_str: str) -> date:
             "or 'Month DD, YYYY' (e.g., '1990-05-15' or 'May 15, 1990')"
         )
 
-    # Validate range (150 years ago to today)
+    # Validate range (200 years ago to today)
     today = date.today()
-    min_date = today - timedelta(days=150 * 365)
+    min_date = today - timedelta(days=200 * 365)
 
     if parsed_date > today:
         raise ValueError("Birth date cannot be in the future")
 
     if parsed_date < min_date:
-        raise ValueError("Birth date cannot be more than 150 years ago")
+        raise ValueError("Birth date cannot be more than 200 years ago")
 
     return parsed_date
 

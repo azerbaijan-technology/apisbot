@@ -90,7 +90,7 @@ class TestBirthData:
             today - timedelta(days=1),  # Yesterday
             date(1990, 5, 15),  # Random past date
             date(1900, 1, 1),  # Old date
-            today - timedelta(days=150 * 365 - 1),  # Just within 150 years
+            today - timedelta(days=200 * 365 - 1),  # Just within 200 years
         ]
 
         for birth_date in valid_dates:
@@ -107,7 +107,7 @@ class TestBirthData:
         today = date.today()
         invalid_dates = [
             today + timedelta(days=1),  # Future date
-            today - timedelta(days=150 * 365 + 1),  # More than 150 years ago
+            today - timedelta(days=200 * 365 + 1),  # More than 200 years ago
         ]
 
         for birth_date in invalid_dates:
@@ -123,11 +123,11 @@ class TestBirthData:
         """Test date validation at exact boundaries."""
         today = date.today()
 
-        # Exactly 150 years ago should be valid
-        exactly_150_years = today - timedelta(days=150 * 365)
+        # Exactly 200 years ago should be valid
+        exactly_200_years = today - timedelta(days=200 * 365)
         birth_data = BirthData(
             name="Test",
-            birth_date=exactly_150_years,
+            birth_date=exactly_200_years,
             birth_time=time(12, 0),
             location="Test",
         )

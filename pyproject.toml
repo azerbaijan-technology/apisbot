@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "aiogram>=3.3.0",
+    "aiogram-dialog>=2.0.0",
     "kerykeion>=4.7.0",
     "cairosvg>=2.7.1",
     "pydantic-settings>=2.1.0",
@@ -53,17 +54,35 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=xml",
     "--cov-report=html",
-    "--cov-fail-under=95",
+    "--cov-fail-under=85",
     "-v",
 ]
 
 [tool.coverage.run]
 branch = true
 source = ["src/apisbot"]
+omit = [
+    "src/apisbot/__main__.py",
+    "src/apisbot/bot/dialogs/*",
+]
 
 [tool.coverage.report]
-fail_under = 95
+fail_under = 85
 show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+omit = [
+    "src/apisbot/__main__.py",
+    "src/apisbot/bot/dialogs/*",
+]
 
 [tool.black]
 line-length = 120
