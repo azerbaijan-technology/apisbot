@@ -86,3 +86,5 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+
+docker-compose.yml
