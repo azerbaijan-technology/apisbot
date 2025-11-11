@@ -1,0 +1,9 @@
+services:
+  apisbot:
+    image: apisbot:latest
+    container_name: apisbot
+    restart: unless-stopped
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - SESSION_TIMEOUT=${SESSION_TIMEOUT:-1800}
