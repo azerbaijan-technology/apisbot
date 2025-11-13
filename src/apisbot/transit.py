@@ -5,7 +5,7 @@ from pathlib import Path
 from kerykeion import AstrologicalSubjectFactory, ChartDataFactory
 from kerykeion.charts.chart_drawer import ChartDrawer
 
-from custom_chart_data_factory import CustomChartDataFactory
+from .custom_chart_data_factory import CustomChartDataFactory
 
 # Step 1: Create subjects
 natal_subject = AstrologicalSubjectFactory.from_birth_data(

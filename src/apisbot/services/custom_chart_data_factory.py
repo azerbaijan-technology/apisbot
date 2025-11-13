@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from kerykeion.chart_data_factory import ChartDataFactory
-from custom_aspects_factory import CustomAspectsFactory
+from .custom_aspects_factory import CustomAspectsFactory
 from kerykeion.schemas.kr_models import AstrologicalSubjectModel, SingleChartDataModel
 from kerykeion.schemas import ActiveAspect
 from kerykeion.schemas.kr_literals import AstrologicalPoint
@@ -10,8 +10,8 @@ class CustomChartDataFactory(ChartDataFactory):
     @staticmethod
     def create_natal_chart_data(
         subject: AstrologicalSubjectModel,
-        active_points: Optional[List[AstrologicalPoint]] = None,
-        active_aspects: List[ActiveAspect] = None,
+        active_points: Optional[List[str]] = None,
+        active_aspects: Optional[List[dict]] = None,
         *,
         restrict_to_similar_signs: bool = False,
         **kwargs

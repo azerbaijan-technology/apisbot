@@ -11,6 +11,10 @@ from kerykeion.utilities import AstrologicalSubjectModel
 
 from ..models import BirthData
 
+from .custom_chart_data_factory import CustomChartDataFactory
+
+from .custom_chart_drawer import CustomChartDrawer
+
 logger = logging.getLogger(__name__)
 
 
@@ -51,6 +55,7 @@ class ChartService:
                 minute=birth_data.birth_time.minute,
                 city=birth_data.location,
                 nation=birth_data.nation,
+                houses_system_identifier="W"
             )
 
             # Update birth_data with geocoded information (for debugging/logging)
@@ -60,10 +65,27 @@ class ChartService:
 
             logger.info(f"Geocoding successful, timezone: {subject.tz_str}")
 
-            chart_data = ChartDataFactory.create_natal_chart_data(subject)
+            active_points= ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
+            active_aspects = [
+                {"name": "conjunction", "orb": 5},
+                {"name": "opposition", "orb": 5},
+                {"name": "trine", "orb": 5},
+                {"name": "square", "orb": 5},
+                {"name": "sextile", "orb": 3},
+            ]
+
+            chart_data = CustomChartDataFactory.create_natal_chart_data(
+                subject,
+                active_points=active_points,
+                active_aspects=active_aspects,
+                restrict_to_similar_signs=True
+            )
 
             # Generate SVG chart
-            drawer = ChartDrawer(chart_data)
+            drawer = CustomChartDrawer(
+                chart_data=chart_data,
+                theme="my-theme"
+            )
             svg_chart = drawer.generate_wheel_only_svg_string(minify=True, remove_css_variables=True)
 
             logger.info("Natal chart generation successful")

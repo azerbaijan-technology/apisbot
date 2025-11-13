@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import List, Optional, Union
 from kerykeion.aspects.aspects_utils import get_active_points_list, calculate_aspect_movement
-from custom_aspects_utils import get_aspect_from_two_points_with_signs
+from .custom_aspects_utils import get_aspect_from_two_points_with_signs
 from kerykeion.schemas.kr_models import AspectModel, ActiveAspect, AstrologicalSubjectModel
 from kerykeion.settings.chart_defaults import DEFAULT_CELESTIAL_POINTS_SETTINGS, DEFAULT_CHART_ASPECTS_SETTINGS
 from kerykeion.settings.config_constants import DEFAULT_ACTIVE_ASPECTS
