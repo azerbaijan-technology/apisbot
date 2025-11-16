@@ -4,7 +4,7 @@ from .custom_aspects_factory import CustomAspectsFactory
 from kerykeion.schemas.kr_models import AstrologicalSubjectModel, SingleChartDataModel
 from kerykeion.schemas import ActiveAspect
 from kerykeion.schemas.kr_literals import AstrologicalPoint
-from typing import Optional, List, Mapping
+from typing import Optional, List, cast
 
 class CustomChartDataFactory(ChartDataFactory):
     @staticmethod
@@ -28,16 +28,16 @@ class CustomChartDataFactory(ChartDataFactory):
         try:
             result = ChartDataFactory.create_natal_chart_data(
                 subject,
-                active_points=active_points,
-                active_aspects=active_aspects,
+                active_points=cast(List[AstrologicalPoint],active_points),
+                active_aspects=cast(List[ActiveAspect],active_aspects),
                 **kwargs
             )
             # Если restrict_to_similar_signs=True, пересчитываем аспекты
             if restrict_to_similar_signs:
                 aspects_model = CustomAspectsFactory.single_chart_aspects(
                     subject,
-                    active_points=active_points,
-                    active_aspects=active_aspects,
+                    active_points=cast(List[AstrologicalPoint],active_points),
+                    active_aspects=cast(List[ActiveAspect],active_aspects),
                     restrict_to_similar_signs=True,
                 )
                 result = SingleChartDataModel(

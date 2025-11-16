@@ -7,13 +7,15 @@ from kerykeion.settings.chart_defaults import DEFAULT_CELESTIAL_POINTS_SETTINGS,
 from kerykeion.settings.config_constants import DEFAULT_ACTIVE_ASPECTS
 from kerykeion.utilities import find_common_active_points
 from kerykeion.aspects.aspects_factory import AspectsFactory
+from kerykeion.schemas.kr_literals import AstrologicalPoint
+from typing import cast
 
 class CustomAspectsFactory:
     @staticmethod
     def single_chart_aspects(
         subject: AstrologicalSubjectModel,
         *,
-        active_points: Optional[List[str]] = None,
+        active_points: Optional[list[AstrologicalPoint]] = None,
         active_aspects: Optional[List[ActiveAspect]] = None,
         axis_orb_limit: Optional[float] = None,
         restrict_to_similar_signs: bool = False,
@@ -21,7 +23,7 @@ class CustomAspectsFactory:
         from kerykeion.schemas.kr_models import SingleChartAspectsModel
         
         celestial_points = DEFAULT_CELESTIAL_POINTS_SETTINGS
-        aspects_settings = DEFAULT_CHART_ASPECTS_SETTINGS
+        aspects_settings =  DEFAULT_CHART_ASPECTS_SETTINGS
         active_aspects_resolved = active_aspects or DEFAULT_ACTIVE_ASPECTS
 
         effective = active_points or subject.active_points
@@ -30,8 +32,8 @@ class CustomAspectsFactory:
 
         points = get_active_points_list(subject, effective)
         
-        planet_id_lookup = {p["name"]: p["id"] for p in celestial_points}
-        filtered_settings = AspectsFactory._update_aspect_settings(aspects_settings, active_aspects_resolved)
+        planet_id_lookup = {p["name"]: p["id"] for p in cast(List[dict],celestial_points)}
+        filtered_settings = AspectsFactory._update_aspect_settings(cast(List[dict],aspects_settings), active_aspects_resolved)
 
         all_aspects = []
         opposite_pairs = {
