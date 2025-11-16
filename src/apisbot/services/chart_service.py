@@ -7,6 +7,7 @@ from kerykeion import (
     ChartDrawer,
     CompositeSubjectFactory,
 )
+from kerykeion.schemas import ActiveAspect, AstrologicalPoint
 from kerykeion.utilities import AstrologicalSubjectModel
 
 from ..models import BirthData
@@ -14,6 +15,8 @@ from ..models import BirthData
 from .custom_chart_data_factory import CustomChartDataFactory
 
 from .custom_chart_drawer import CustomChartDrawer
+
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -107,10 +110,26 @@ class ChartService:
     async def generate_composite(subject_1: AstrologicalSubjectModel, subject_2: AstrologicalSubjectModel) -> str:
         try:
             logger.info("Generating composite chart (no PII logged)")
-            composite_subject = CompositeSubjectFactory(subject_1, subject_2).get_midpoint_composite_subject_model()
-            chart_data = ChartDataFactory.create_composite_chart_data(composite_subject)
 
-            drawer = ChartDrawer(chart_data=chart_data)
+            active_points: List[AstrologicalPoint] = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
+            active_aspects: List[ActiveAspect] = [
+                {"name": "conjunction", "orb": 5},
+                {"name": "opposition", "orb": 5},
+                {"name": "trine", "orb": 5},
+                {"name": "square", "orb": 5},
+                {"name": "sextile", "orb": 3},
+            ]
+            composite_subject = CompositeSubjectFactory(subject_1, subject_2).get_midpoint_composite_subject_model()
+            chart_data = ChartDataFactory.create_composite_chart_data(
+                composite_subject,
+                active_points=active_points,
+                active_aspects=active_aspects
+            )
+
+            drawer = CustomChartDrawer(
+                chart_data=chart_data,
+                theme="my-theme"
+            )
 
             svg_chart = drawer.generate_wheel_only_svg_string(minify=True, remove_css_variables=True)
 

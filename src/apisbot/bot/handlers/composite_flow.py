@@ -142,6 +142,7 @@ async def process_location_1(message: Message, state: FSMContext):
             minute=data["birth_time_1"].minute,
             city=location,
             nation=" ",
+            houses_system_identifier="W"
         )
     except (ValueError, KerykeionException) as e:
         error_msg = str(e)
@@ -326,6 +327,7 @@ async def process_location_2(message: Message, state: FSMContext):
             minute=data["birth_time_2"].minute,
             city=location,
             nation=" ",
+            houses_system_identifier="W"
         )
 
         # Generate composite chart
