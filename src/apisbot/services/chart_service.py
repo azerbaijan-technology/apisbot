@@ -1,25 +1,30 @@
 import logging
+from typing import List
 
 from kerykeion import (
     AstrologicalSubject,
     AstrologicalSubjectFactory,
     ChartDataFactory,
-    ChartDrawer,
     CompositeSubjectFactory,
 )
 from kerykeion.schemas import ActiveAspect, AstrologicalPoint
 from kerykeion.utilities import AstrologicalSubjectModel
+import kerykeion.composite_subject_factory
 
 from ..models import BirthData
-
 from .custom_chart_data_factory import CustomChartDataFactory
-
 from .custom_chart_drawer import CustomChartDrawer
-
-from typing import List
 
 logger = logging.getLogger(__name__)
 
+_original_circular_mean = kerykeion.composite_subject_factory.circular_mean
+
+def _patched_circular_mean(p1, p2):
+
+    result = _original_circular_mean(p1, p2)
+    return result % 360
+
+kerykeion.composite_subject_factory.circular_mean = _patched_circular_mean
 
 class ChartService:
     """Service for generating natal charts using kerykeion.
@@ -58,7 +63,7 @@ class ChartService:
                 minute=birth_data.birth_time.minute,
                 city=birth_data.location,
                 nation=birth_data.nation,
-                houses_system_identifier="W"
+                houses_system_identifier="W",
             )
 
             # Update birth_data with geocoded information (for debugging/logging)
@@ -68,8 +73,19 @@ class ChartService:
 
             logger.info(f"Geocoding successful, timezone: {subject.tz_str}")
 
-            active_points= ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
-            active_aspects = [
+            active_points: List[AstrologicalPoint] = [
+                "Sun",
+                "Moon",
+                "Mercury",
+                "Venus",
+                "Mars",
+                "Jupiter",
+                "Saturn",
+                "Uranus",
+                "Neptune",
+                "Pluto",
+            ]
+            active_aspects: List[ActiveAspect] = [
                 {"name": "conjunction", "orb": 5},
                 {"name": "opposition", "orb": 5},
                 {"name": "trine", "orb": 5},
@@ -78,17 +94,11 @@ class ChartService:
             ]
 
             chart_data = CustomChartDataFactory.create_natal_chart_data(
-                subject,
-                active_points=active_points,
-                active_aspects=active_aspects,
-                restrict_to_similar_signs=True
+                subject, active_points=active_points, active_aspects=active_aspects, restrict_to_similar_signs=True
             )
 
             # Generate SVG chart
-            drawer = CustomChartDrawer(
-                chart_data=chart_data,
-                theme="my-theme"
-            )
+            drawer = CustomChartDrawer(chart_data=chart_data, theme="my-theme")
             svg_chart = drawer.generate_wheel_only_svg_string(minify=True, remove_css_variables=True)
 
             logger.info("Natal chart generation successful")
@@ -111,7 +121,18 @@ class ChartService:
         try:
             logger.info("Generating composite chart (no PII logged)")
 
-            active_points: List[AstrologicalPoint] = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
+            active_points: List[AstrologicalPoint] = [
+                "Sun",
+                "Moon",
+                "Mercury",
+                "Venus",
+                "Mars",
+                "Jupiter",
+                "Saturn",
+                "Uranus",
+                "Neptune",
+                "Pluto",
+            ]
             active_aspects: List[ActiveAspect] = [
                 {"name": "conjunction", "orb": 5},
                 {"name": "opposition", "orb": 5},
@@ -121,15 +142,53 @@ class ChartService:
             ]
             composite_subject = CompositeSubjectFactory(subject_1, subject_2).get_midpoint_composite_subject_model()
             chart_data = ChartDataFactory.create_composite_chart_data(
-                composite_subject,
-                active_points=active_points,
-                active_aspects=active_aspects
+                composite_subject, active_points=active_points, active_aspects=active_aspects
             )
 
-            drawer = CustomChartDrawer(
-                chart_data=chart_data,
-                theme="my-theme"
+            drawer = CustomChartDrawer(chart_data=chart_data, theme="my-theme")
+
+            svg_chart = drawer.generate_wheel_only_svg_string(minify=True, remove_css_variables=True)
+
+            logger.info("Composite chart generation successful")
+            return svg_chart
+
+        except Exception as e:
+            logger.error(f"Composite chart generation failed: {type(e).__name__}: {str(e)}")
+            raise
+
+    @staticmethod
+    async def generate_transit(subject_1: AstrologicalSubjectModel, subject_2: AstrologicalSubjectModel) -> str:
+        try:
+            logger.info("Generating transit chart (no PII logged)")
+
+            active_points: List[AstrologicalPoint] = [
+                "Sun",
+                "Moon",
+                "Mercury",
+                "Venus",
+                "Mars",
+                "Jupiter",
+                "Saturn",
+                "Uranus",
+                "Neptune",
+                "Pluto",
+            ]
+            active_aspects: List[ActiveAspect] = [
+                {"name": "conjunction", "orb": 5},
+                {"name": "opposition", "orb": 5},
+                {"name": "trine", "orb": 5},
+                {"name": "square", "orb": 5},
+                {"name": "sextile", "orb": 3},
+            ]
+
+            chart_data = ChartDataFactory.create_transit_chart_data(
+                natal_subject=subject_1,
+                transit_subject=subject_2,
+                active_points=active_points,
+                active_aspects=active_aspects,
             )
+
+            drawer = CustomChartDrawer(chart_data=chart_data, theme="my-theme")
 
             svg_chart = drawer.generate_wheel_only_svg_string(minify=True, remove_css_variables=True)
 

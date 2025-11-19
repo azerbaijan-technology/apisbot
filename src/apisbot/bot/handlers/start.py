@@ -5,7 +5,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from ..states import ChartFlow, CompositeFlow
+from ..states import ChartFlow, CompositeFlow, TransitFlow
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -47,6 +47,8 @@ async def cmd_help(message: Message):
         "🔮 <b>Natal Chart Bot - Help</b>\n\n"
         "<b>Available Commands:</b>\n"
         "/start - Start generating your natal chart\n"
+        "/composite - Create composite chart\n"
+        "/transit - Create transit chart\n"
         "/help - Show this help message\n"
         "/cancel - Cancel current operation and clear data\n\n"
         "<b>How it works:</b>\n"
@@ -95,7 +97,7 @@ async def cmd_composite(message: Message, state: FSMContext):
     await state.clear()
 
     await message.answer(
-        "Composite chart"
+        "Composite chart\n"
         "I'll need a few pieces of information for 2 subjects:\n"
         "  • Name\n"
         "  • Birth date\n"
@@ -104,3 +106,22 @@ async def cmd_composite(message: Message, state: FSMContext):
     )
 
     await state.set_state(CompositeFlow.waiting_for_name_1)
+
+
+@router.message(Command("transit"))
+async def cmd_transit(message: Message, state: FSMContext):
+    """/transit - generate transit chart"""
+    logger.info(f"User {message.from_user.id if message.from_user else 'Unknown'}: /composite command")
+
+    await state.clear()
+
+    await message.answer(
+        "Transit chart\n"
+        "I'll need a few pieces of information for subject and location:\n"
+        "  • Name\n"
+        "  • Birth date\n"
+        "  • Birth time\n"
+        "  • Birth location\n\n"
+    )
+
+    await state.set_state(TransitFlow.waiting_for_name_1)

@@ -29,3 +29,15 @@ class CompositeFlow(StatesGroup):
     waiting_for_time_2 = State()
     waiting_for_location_2 = State()
     generating_composite_chart = State()
+
+
+class TransitFlow(StatesGroup):
+    waiting_for_name_1 = State()
+    waiting_for_date_1 = State()
+    waiting_for_time_1 = State()
+    waiting_for_location_1 = State()
+    waiting_for_name_2 = State()
+    waiting_for_date_2 = State()
+    waiting_for_time_2 = State()
+    waiting_for_location_2 = State()
+    generating_transit_chart = State()

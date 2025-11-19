@@ -19,7 +19,7 @@ install: ## Install all dependencies using uv
 
 test: ## Run the test suite with pytest and coverage
 	@echo "$(CYAN)Running tests with coverage...$(RESET)"
-	@uv run pytest
+	@DYLD_LIBRARY_PATH="/opt/homebrew/lib" uv run pytest
 	@echo "$(CYAN)✓ Tests completed$(RESET)"
 
 pyright: ## Run type checking with basedpyright
@@ -64,7 +64,7 @@ all: format lint-all test ## Run all checks (formatting, linting, and tests)
 run: ## Run the Telegram bot
 	@echo "$(CYAN)Starting Telegram bot...$(RESET)"
 	@test -f .env || { echo "Error: .env file not found. Copy .env.example and configure it."; exit 1; }
-	@uv run -m apisbot
+	@DYLD_LIBRARY_PATH="/opt/homebrew/lib" uv run -m apisbot
 
 clean: ## Remove build artifacts, caches, and temporary files
 	@echo "$(CYAN)Cleaning build artifacts...$(RESET)"

@@ -1,19 +1,33 @@
 # -*- coding: utf-8 -*-
-from typing import List, Optional, Union
-from kerykeion.aspects.aspects_utils import get_active_points_list, calculate_aspect_movement
-from .custom_aspects_utils import get_aspect_from_two_points_with_signs
-from kerykeion.schemas.kr_models import AspectModel, ActiveAspect, AstrologicalSubjectModel
+from typing import List, Optional, Union, cast
+
+from kerykeion.aspects.aspects_factory import AspectsFactory
+from kerykeion.aspects.aspects_utils import calculate_aspect_movement, get_active_points_list
+from kerykeion.schemas.kr_literals import AstrologicalPoint
+from kerykeion.schemas.kr_models import (
+    ActiveAspect,
+    AspectModel,
+    AstrologicalSubjectModel,
+    CompositeSubjectModel,
+    PlanetReturnModel,
+)
 from kerykeion.settings.chart_defaults import DEFAULT_CELESTIAL_POINTS_SETTINGS, DEFAULT_CHART_ASPECTS_SETTINGS
 from kerykeion.settings.config_constants import DEFAULT_ACTIVE_ASPECTS
 from kerykeion.utilities import find_common_active_points
-from kerykeion.aspects.aspects_factory import AspectsFactory
-from kerykeion.schemas.kr_literals import AstrologicalPoint
-from typing import cast
+
+from .custom_aspects_utils import get_aspect_from_two_points_with_signs
+
+SubjectType = Union[
+    AstrologicalSubjectModel,
+    CompositeSubjectModel,
+    PlanetReturnModel,
+]
+
 
 class CustomAspectsFactory:
     @staticmethod
     def single_chart_aspects(
-        subject: AstrologicalSubjectModel,
+        subject: SubjectType,
         *,
         active_points: Optional[list[AstrologicalPoint]] = None,
         active_aspects: Optional[List[ActiveAspect]] = None,
@@ -21,9 +35,9 @@ class CustomAspectsFactory:
         restrict_to_similar_signs: bool = False,
     ):
         from kerykeion.schemas.kr_models import SingleChartAspectsModel
-        
+
         celestial_points = DEFAULT_CELESTIAL_POINTS_SETTINGS
-        aspects_settings =  DEFAULT_CHART_ASPECTS_SETTINGS
+        aspects_settings = DEFAULT_CHART_ASPECTS_SETTINGS
         active_aspects_resolved = active_aspects or DEFAULT_ACTIVE_ASPECTS
 
         effective = active_points or subject.active_points
@@ -31,14 +45,18 @@ class CustomAspectsFactory:
             effective = find_common_active_points(subject.active_points, active_points)
 
         points = get_active_points_list(subject, effective)
-        
-        planet_id_lookup = {p["name"]: p["id"] for p in cast(List[dict],celestial_points)}
-        filtered_settings = AspectsFactory._update_aspect_settings(cast(List[dict],aspects_settings), active_aspects_resolved)
+
+        planet_id_lookup = {p["name"]: p["id"] for p in cast(List[dict], celestial_points)}
+        filtered_settings = AspectsFactory._update_aspect_settings(
+            cast(List[dict], aspects_settings), active_aspects_resolved
+        )
 
         all_aspects = []
         opposite_pairs = {
-            ("Ascendant", "Descendant"), ("Descendant", "Ascendant"),
-            ("Medium_Coeli", "Imum_Coeli"), ("Imum_Coeli", "Medium_Coeli"),
+            ("Ascendant", "Descendant"),
+            ("Descendant", "Ascendant"),
+            ("Medium_Coeli", "Imum_Coeli"),
+            ("Imum_Coeli", "Medium_Coeli"),
             ("True_North_Lunar_Node", "True_South_Lunar_Node"),
             ("Mean_North_Lunar_Node", "Mean_South_Lunar_Node"),
         }
@@ -47,7 +65,7 @@ class CustomAspectsFactory:
             for j in range(i + 1, len(points)):
                 p1 = points[i]
                 p2 = points[j]
-                
+
                 if (p1.name, p2.name) in opposite_pairs:
                     continue
 
@@ -78,9 +96,7 @@ class CustomAspectsFactory:
                             diff=asp["diff"],
                             p1=planet_id_lookup.get(p1.name, 0),
                             p2=planet_id_lookup.get(p2.name, 0),
-                            aspect_movement=calculate_aspect_movement(
-                                p1.abs_pos, p2.abs_pos, asp["aspect_degrees"]
-                            ),
+                            aspect_movement=calculate_aspect_movement(p1.abs_pos, p2.abs_pos, asp["aspect_degrees"]),
                         )
                     )
 

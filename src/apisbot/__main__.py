@@ -7,7 +7,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 
 # Import handlers
-from .bot.handlers import chart_flow, composite_flow, start
+from .bot.handlers import chart_flow, composite_flow, start, transit_flow
 from .bot.middlewares import LoggingMiddleware
 from .config import get_settings
 
@@ -46,6 +46,7 @@ async def main():
     dp.include_router(start.router)
     dp.include_router(chart_flow.router)
     dp.include_router(composite_flow.router)
+    dp.include_router(transit_flow.router)
 
     logger.info(f"Bot configured with session timeout: {settings.session_timeout}s")
     logger.info("Starting polling...")

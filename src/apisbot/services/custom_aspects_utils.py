@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-from typing import Union, Optional
+from typing import Optional, Union
+
 from swisseph import difdeg2n
+
 
 def _min_sign_diff(p1_sign: int, p2_sign: int) -> int:
     diff = abs(p1_sign - p2_sign)
     return diff if diff <= 6 else 12 - diff
+
 
 def get_aspect_from_two_points_with_signs(
     aspects_settings: list[dict],
@@ -29,11 +32,16 @@ def get_aspect_from_two_points_with_signs(
             if check_signs and p1_sign is not None and p2_sign is not None:
                 d = _min_sign_diff(p1_sign, p2_sign)
 
-                if name == "conjunction" and d != 0: continue
-                if name == "opposition"  and d != 6: continue
-                if name == "square"      and d != 3: continue
-                if name == "trine"       and d != 4: continue
-                if name == "sextile"     and d != 2: continue
+                if name == "conjunction" and d != 0:
+                    continue
+                if name == "opposition" and d != 6:
+                    continue
+                if name == "square" and d != 3:
+                    continue
+                if name == "trine" and d != 4:
+                    continue
+                if name == "sextile" and d != 2:
+                    continue
 
             return {
                 "verdict": True,
