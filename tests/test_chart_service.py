@@ -140,11 +140,12 @@ class TestChartService:
     @patch("apisbot.services.chart_service.CompositeSubjectFactory")
     @patch("apisbot.services.chart_service.ChartDataFactory")
     @patch("apisbot.services.chart_service.CustomChartDrawer")
+    @patch("apisbot.services.chart_service.AstrologicalSubjectFactory")
     async def test_generate_composite_success(
         self,
+        mock_subject_factory,
         mock_drawer_class,
         mock_chart_data_factory,
-        mock_subject_factory,
         mock_composite_factory_class,
         mock_report_generator_class,
     ):
@@ -160,7 +161,7 @@ class TestChartService:
         mock_subject_2.lng = -0.1278
         mock_subject_2.tz_str = "Europe/London"
 
-        mock_create_subject.side_effect = [mock_subject_1, mock_subject_2]
+        mock_subject_factory.from_birth_data.side_effect = [mock_subject_1, mock_subject_2]
 
         # Setup composite mock
         mock_composite_subject = MagicMock()
@@ -196,9 +197,6 @@ class TestChartService:
 
         # Verify
         assert result == "<svg>composite chart</svg>"
-        assert mock_create_subject.call_count == 2
-
-        # Check that from_birth_data was called for both
         assert mock_subject_factory.from_birth_data.call_count == 2
 
     @pytest.mark.asyncio

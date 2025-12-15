@@ -161,7 +161,6 @@ class TestCompositeFlowPerson2:
         state.set_state.assert_called_once_with(CompositeFlow.waiting_for_location_2)
 
     @pytest.mark.asyncio
-    @patch("apisbot.bot.handlers.composite_flow.AstrologicalSubjectFactory")
     @patch("apisbot.bot.handlers.composite_flow.ChartService")
     @patch("apisbot.bot.handlers.composite_flow.ConverterService")
     @patch("apisbot.bot.handlers.composite_flow.AstrologicalSubjectFactory")
