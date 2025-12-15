@@ -18,7 +18,7 @@ from kerykeion import (
 from kerykeion.schemas import ActiveAspect, AstrologicalPoint
 from kerykeion.utilities import AstrologicalSubjectModel
 
-from ..models import BirthData
+from ..models import BirthData, ChartSelection
 from .custom_chart_data_factory import CustomChartDataFactory
 from .custom_chart_drawer import CustomChartDrawer
 
@@ -314,11 +314,7 @@ class ChartService:
             if len(birth_data_list) != 2:
                 raise ValueError(f"Composite chart requires exactly 2 birth data entries, got {len(birth_data_list)}")
 
-            # Create astrological subjects for both persons
-            subject_1 = await ChartService._create_subject(birth_data_list[0])
-            subject_2 = await ChartService._create_subject(birth_data_list[1])
-
-            return await ChartService.generate_composite(subject_1, subject_2)
+            return await ChartService.generate_composite(birth_data_list[0], birth_data_list[1])
 
         else:
             raise ValueError(f"Unsupported chart type: {chart_type}")
