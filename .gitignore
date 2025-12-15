@@ -41,7 +41,8 @@ coverage.xml
 htmlcov/
 .tox/
 .nox/
-
+charts_output/
+new_charts_output/
 # IDEs
 .vscode/
 .idea/
