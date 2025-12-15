@@ -59,7 +59,13 @@ class CustomChartDrawer(ChartDrawer):
         else:
             dropin = c1
 
-        slice_path = f'<path d="M{str(r)},{str(r)} L{str(dropin + sliceToX(num, r - dropin, offset))},{str(dropin + sliceToY(num, r - dropin, offset))} A{str(r - dropin)},{str(r - dropin)} 0 0,0 {str(dropin + sliceToX(num + 1, r - dropin, offset))},{str(dropin + sliceToY(num + 1, r - dropin, offset))} z" style="{style}"/>'
+        slice_path = (
+            f'<path d="M{str(r)},{str(r)} '
+            f"L{str(dropin + sliceToX(num, r - dropin, offset))},{str(dropin + sliceToY(num, r - dropin, offset))} "
+            f"A{str(r - dropin)},{str(r - dropin)} 0 0,0 "
+            f"{str(dropin + sliceToX(num + 1, r - dropin, offset))},"
+            f'{str(dropin + sliceToY(num + 1, r - dropin, offset))} z" style="{style}"/>'
+        )
 
         # symbols
         offset = offset  # <-- REMOVED to fix alignment
@@ -70,7 +76,11 @@ class CustomChartDrawer(ChartDrawer):
         else:
             dropin = 18 + c1
 
-        sign = f'<g transform="translate(-16,-16)"><use x="{str(dropin + sliceToX(num, r - dropin, offset))}" y="{str(dropin + sliceToY(num, r - dropin, offset))}" xlink:href="#{type}" /></g>'
+        sign = (
+            f'<g transform="translate(-16,-16)">'
+            f'<use x="{str(dropin + sliceToX(num, r - dropin, offset))}" '
+            f'y="{str(dropin + sliceToY(num, r - dropin, offset))}" xlink:href="#{type}" /></g>'
+        )
 
         return slice_path + "" + sign
 
