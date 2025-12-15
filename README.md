@@ -4,14 +4,33 @@ A Telegram bot that generates personalized natal (birth) charts based on user-pr
 
 ## Features
 
-- Interactive conversation flow to collect birth data
-- Support for multiple date and time formats
-- Automatic location geocoding
-- Beautiful natal chart generation using Kerykeion
+### Chart Generation
+- **Interactive Menu System** - Choose between Natal and Composite charts
+- **Natal Charts** - Personal birth chart showing planetary positions
+- **Composite Charts** - Relationship charts comparing two people's birth data
+- Beautiful chart generation using Kerykeion library
 - SVG to PNG conversion for easy sharing
-- Privacy-focused: all user data is deleted after chart generation
-- Session timeout for security
-- Comprehensive error handling and validation
+
+### User Experience
+- **Menu Hints** - Helpful command suggestions at each step
+- **Smart Input Validation** - User-friendly error messages with remediation guidance
+- **Data Preservation** - Never loses your entered data on validation errors
+- **Interactive Help** - Comprehensive documentation accessible via /help button
+- Support for multiple date and time formats
+- Automatic location geocoding with recovery options
+
+### Privacy & Security
+- **Privacy-First Design** - All data deleted after chart generation
+- **Session Cleanup** - Automatic cleanup on completion or cancellation
+- **Session Timeout** - 30-minute default timeout (configurable)
+- No persistent storage of personal information
+- No PII (Personally Identifiable Information) in logs
+
+### Architecture
+- Framework-agnostic service layer for easy testing
+- Comprehensive error handling with remediation guidance
+- Async/await throughout for optimal performance
+- Full type safety with type hints
 
 ## Installation
 
@@ -77,9 +96,10 @@ docker run -d --env-file .env apisbot
 
 ## Bot Commands
 
-- `/start` - Begin generating a natal chart
-- `/help` - Show help and usage instructions
-- `/cancel` - Cancel current operation and clear data
+- `/start` - Display interactive chart selection menu (Natal or Composite)
+- `/help` - Show comprehensive help documentation
+- `/cancel` - Cancel current operation and securely clear all data
+- `/composite` - Quick access to composite chart generation
 
 ## Supported Date Formats
 
@@ -132,12 +152,32 @@ Configuration is managed through environment variables (see `.env.example`):
 
 ## Architecture
 
-The bot uses:
-- **FSM (Finite State Machine)** for conversation flow management
-- **Middleware** for cross-cutting concerns (logging, etc.)
-- **Service layer** for business logic separation
-- **Pydantic models** for data validation
-- **Async/await** throughout for optimal performance
+The bot follows modern software architecture principles:
+
+### Service Layer Pattern
+- **Framework-Agnostic Services** - No aiogram dependencies in services
+- **InputValidationService** - Unified validation with remediation guidance
+- **SessionService** - Privacy-first session management
+- **LocationService** - Geocoding with kerykeion
+- **DateTimeService** - Date/time parsing with edge case handling
+- **MenuService** - Command hints and help documentation
+- **ChartService** - Supports both Natal and Composite chart generation
+
+### Technology Stack
+- **aiogram 3.x** - Modern async Telegram bot framework
+- **aiogram-dialog** - Calendar and interactive widgets (prepared for integration)
+- **kerykeion** - Professional astrological chart library
+- **pydantic** - Data validation and settings management
+- **FSM (Finite State Machine)** - Conversation flow management
+- **Type Safety** - Full type hints with pyright checking
+- **Async/Await** - All I/O operations are async for optimal performance
+
+### Testing & Quality
+- **pytest** - Unit and integration testing framework
+- **pyright** - Static type checking
+- **flake8, black, isort** - Code quality and formatting
+- Services are fully testable without bot infrastructure
+- Target: 80%+ test coverage (tests pending)
 
 ## License
 
