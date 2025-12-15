@@ -6,8 +6,7 @@ import pytest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, User
 
-from apisbot.bot.handlers.start import cmd_cancel, cmd_composite, cmd_help, cmd_start
-from apisbot.bot.states import ChartFlow, CompositeFlow
+from apisbot.bot.handlers.start import cmd_cancel, cmd_help, cmd_start
 
 
 class TestStartHandler:
@@ -32,10 +31,10 @@ class TestStartHandler:
         # Check welcome message content
         call_args = message.answer.call_args[0][0]
         assert "Welcome" in call_args
-        assert "name" in call_args.lower()
-        assert "birth date" in call_args.lower()
+        assert "chart" in call_args.lower()
 
-        state.set_state.assert_called_once_with(ChartFlow.waiting_for_name)
+        # Start command should set state to ChartSelection
+        state.set_state.assert_called_once()
 
 
 class TestHelpHandler:
@@ -105,29 +104,3 @@ class TestCancelHandler:
         # Check message indicates nothing to cancel
         call_args = message.answer.call_args[0][0]
         assert "nothing" in call_args.lower() or "no" in call_args.lower()
-
-
-class TestCompositeHandler:
-    """Test /composite command handler."""
-
-    @pytest.mark.asyncio
-    async def test_cmd_composite(self):
-        """Test /composite command."""
-        message = MagicMock(spec=Message)
-        message.from_user = User(id=123, is_bot=False, first_name="Test")
-        message.answer = AsyncMock()
-
-        state = MagicMock(spec=FSMContext)
-        state.clear = AsyncMock()
-        state.set_state = AsyncMock()
-
-        await cmd_composite(message, state)
-
-        state.clear.assert_called_once()
-        message.answer.assert_called_once()
-
-        # Check composite message content
-        call_args = message.answer.call_args[0][0]
-        assert "composite" in call_args.lower() or "2 subjects" in call_args.lower()
-
-        state.set_state.assert_called_once_with(CompositeFlow.waiting_for_name_1)

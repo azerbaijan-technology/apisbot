@@ -57,9 +57,9 @@ class TestParseDate:
             parse_date(tomorrow.strftime("%Y-%m-%d"))
 
     def test_parse_date_too_old_raises_error(self):
-        """Test that dates older than 150 years raise ValueError."""
-        too_old = date.today() - timedelta(days=151 * 365)
-        with pytest.raises(ValueError, match="cannot be more than 150 years ago"):
+        """Test that dates older than 200 years raise ValueError."""
+        too_old = date.today() - timedelta(days=201 * 365)
+        with pytest.raises(ValueError, match="cannot be more than 200 years ago"):
             parse_date(too_old.strftime("%Y-%m-%d"))
 
     def test_parse_date_invalid_format(self):
