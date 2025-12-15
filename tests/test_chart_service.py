@@ -106,18 +106,18 @@ class TestChartService:
         """Test successful transit chart generation."""
         mock_subject_1 = MagicMock()
         mock_subject_2 = MagicMock()
-        
+
         # Mock data
         mock_chart_data = MagicMock()
         mock_data_factory.create_transit_chart_data.return_value = mock_chart_data
-        
+
         # Mock drawer
         mock_drawer = MagicMock()
         mock_drawer.generate_wheel_only_svg_string.return_value = "<svg>transit</svg>"
         mock_drawer_class.return_value = mock_drawer
-        
+
         result = await ChartService.generate_transit(mock_subject_1, mock_subject_2)
-        
+
         assert result == "<svg>transit</svg>"
         mock_data_factory.create_transit_chart_data.assert_called_once()
         mock_drawer_class.assert_called_once_with(chart_data=mock_chart_data, theme="my-theme")
@@ -129,9 +129,9 @@ class TestChartService:
         """Test transit chart generation error."""
         mock_subject_1 = MagicMock()
         mock_subject_2 = MagicMock()
-        
+
         mock_data_factory.create_transit_chart_data.side_effect = Exception("Generation failed")
-        
+
         with pytest.raises(Exception, match="Generation failed"):
             await ChartService.generate_transit(mock_subject_1, mock_subject_2)
 
@@ -197,7 +197,7 @@ class TestChartService:
         assert result == "<svg>composite chart</svg>"
         assert birth_data_1.latitude == 40.7128
         assert birth_data_2.latitude == 51.5074
-        
+
         # Check that from_birth_data was called for both
         assert mock_subject_factory.from_birth_data.call_count == 2
 

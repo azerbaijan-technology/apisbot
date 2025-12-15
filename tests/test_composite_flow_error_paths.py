@@ -155,17 +155,17 @@ class TestCompositeFlowErrorPaths:
         message.answer = AsyncMock()
 
         state = MagicMock(spec=FSMContext)
-        state.get_data = AsyncMock(return_value={
-            "name_1": "Test", "birth_date_1": date(2000,1,1), "birth_time_1": time(12,0)
-        })
+        state.get_data = AsyncMock(
+            return_value={"name_1": "Test", "birth_date_1": date(2000, 1, 1), "birth_time_1": time(12, 0)}
+        )
         state.set_state = AsyncMock()
 
         # Error with "city not found" triggers tip message
         mock_subject_factory.from_birth_data.side_effect = ValueError("city not found")
         await process_location_1(message, state)
-        
+
         assert "Location Error" in message.answer.call_args[0][0]
-        state.set_state.assert_called_with(ANY) # Needs imported CompositeFlow if checking exact state
+        state.set_state.assert_called_with(ANY)  # Needs imported CompositeFlow if checking exact state
 
     @pytest.mark.asyncio
     @patch("apisbot.bot.handlers.composite_flow.AstrologicalSubjectFactory")
@@ -177,13 +177,13 @@ class TestCompositeFlowErrorPaths:
         message.answer = AsyncMock()
 
         state = MagicMock(spec=FSMContext)
-        state.get_data = AsyncMock(return_value={
-            "name_1": "Test", "birth_date_1": date(2000,1,1), "birth_time_1": time(12,0)
-        })
+        state.get_data = AsyncMock(
+            return_value={"name_1": "Test", "birth_date_1": date(2000, 1, 1), "birth_time_1": time(12, 0)}
+        )
 
         mock_subject_factory.from_birth_data.side_effect = ValueError("Something else")
         await process_location_1(message, state)
-        
+
         # Generic failure message
         assert "Composite Chart Generation Failed" in message.answer.call_args[0][0]
 
@@ -197,13 +197,13 @@ class TestCompositeFlowErrorPaths:
         message.answer = AsyncMock()
 
         state = MagicMock(spec=FSMContext)
-        state.get_data = AsyncMock(return_value={
-            "name_1": "Test", "birth_date_1": date(2000,1,1), "birth_time_1": time(12,0)
-        })
+        state.get_data = AsyncMock(
+            return_value={"name_1": "Test", "birth_date_1": date(2000, 1, 1), "birth_time_1": time(12, 0)}
+        )
 
         mock_subject_factory.from_birth_data.side_effect = Exception("Boom")
         await process_location_1(message, state)
-        
+
         assert "Unexpected Error" in message.answer.call_args[0][0]
 
     @pytest.mark.asyncio

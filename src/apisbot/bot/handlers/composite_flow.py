@@ -322,9 +322,9 @@ async def process_location_2(message: Message, state: FSMContext):
             name=data["name_1"],
             birth_date=data["birth_date_1"],
             birth_time=data["birth_time_1"],
-            location=data.get("location_1", ""), # Fallback if not set (should be set)
+            location=data.get("location_1", ""),  # Fallback if not set (should be set)
         )
-        
+
         birth_data_2 = BirthData(
             name=data["name_2"],
             birth_date=data["birth_date_2"],
