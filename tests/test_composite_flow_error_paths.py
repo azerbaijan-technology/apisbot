@@ -1,7 +1,7 @@
 """Tests for composite_flow error paths to increase coverage."""
 
 from datetime import date, time
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
 from aiogram.fsm.context import FSMContext
@@ -43,18 +43,37 @@ class TestCompositeFlowErrorPaths:
     async def test_process_name_2_invalid(self):
         """Test invalid name for person 2."""
         message = MagicMock(spec=Message)
-        message.text = ""
         message.from_user = User(id=123, is_bot=False, first_name="Test")
         message.answer = AsyncMock()
-
         state = MagicMock(spec=FSMContext)
 
+        # Empty
+        message.text = ""
         await process_name_2(message, state)
-
         message.answer.assert_called()
 
+        # No letters
+        message.text = "123"
+        await process_name_2(message, state)
+        assert "Name must contain at least one letter" in message.answer.call_args[0][0]
+
+        # Too long
+        message.text = "a" * 101
+        await process_name_2(message, state)
+        assert "Name must be between 1 and 100" in message.answer.call_args[0][0]
+
     @pytest.mark.asyncio
-    async def test_process_date_1_invalid(self):
+    async def test_process_name_1_validations(self):
+        """Test name 1 validations."""
+        message = MagicMock(spec=Message)
+        message.from_user = User(id=123, is_bot=False, first_name="Test")
+        message.answer = AsyncMock()
+        state = MagicMock(spec=FSMContext)
+
+        # Too long
+        message.text = "a" * 101
+        await process_name_1(message, state)
+        assert "Name must be between 1 and 100" in message.answer.call_args[0][0]
         """Test invalid date for person 1."""
         message = MagicMock(spec=Message)
         message.text = "invalid"
@@ -127,8 +146,70 @@ class TestCompositeFlowErrorPaths:
         state.update_data.assert_not_called()
 
     @pytest.mark.asyncio
+    @patch("apisbot.bot.handlers.composite_flow.AstrologicalSubjectFactory")
+    async def test_process_location_1_geonames_error(self, mock_subject_factory):
+        """Test process_location_1 specific geonames error."""
+        message = MagicMock(spec=Message)
+        message.text = "Nowhere"
+        message.from_user = User(id=123, is_bot=False, first_name="Test")
+        message.answer = AsyncMock()
+
+        state = MagicMock(spec=FSMContext)
+        state.get_data = AsyncMock(return_value={
+            "name_1": "Test", "birth_date_1": date(2000,1,1), "birth_time_1": time(12,0)
+        })
+        state.set_state = AsyncMock()
+
+        # Error with "city not found" triggers tip message
+        mock_subject_factory.from_birth_data.side_effect = ValueError("city not found")
+        await process_location_1(message, state)
+        
+        assert "Location Error" in message.answer.call_args[0][0]
+        state.set_state.assert_called_with(ANY) # Needs imported CompositeFlow if checking exact state
+
+    @pytest.mark.asyncio
+    @patch("apisbot.bot.handlers.composite_flow.AstrologicalSubjectFactory")
+    async def test_process_location_1_generic_error(self, mock_subject_factory):
+        """Test process_location_1 specific generic error."""
+        message = MagicMock(spec=Message)
+        message.text = "Nowhere"
+        message.from_user = User(id=123, is_bot=False, first_name="Test")
+        message.answer = AsyncMock()
+
+        state = MagicMock(spec=FSMContext)
+        state.get_data = AsyncMock(return_value={
+            "name_1": "Test", "birth_date_1": date(2000,1,1), "birth_time_1": time(12,0)
+        })
+
+        mock_subject_factory.from_birth_data.side_effect = ValueError("Something else")
+        await process_location_1(message, state)
+        
+        # Generic failure message
+        assert "Composite Chart Generation Failed" in message.answer.call_args[0][0]
+
+    @pytest.mark.asyncio
+    @patch("apisbot.bot.handlers.composite_flow.AstrologicalSubjectFactory")
+    async def test_process_location_1_unexpected_error(self, mock_subject_factory):
+        """Test process_location_1 unexpected exception."""
+        message = MagicMock(spec=Message)
+        message.text = "Nowhere"
+        message.from_user = User(id=123, is_bot=False, first_name="Test")
+        message.answer = AsyncMock()
+
+        state = MagicMock(spec=FSMContext)
+        state.get_data = AsyncMock(return_value={
+            "name_1": "Test", "birth_date_1": date(2000,1,1), "birth_time_1": time(12,0)
+        })
+
+        mock_subject_factory.from_birth_data.side_effect = Exception("Boom")
+        await process_location_1(message, state)
+        
+        assert "Unexpected Error" in message.answer.call_args[0][0]
+
+    @pytest.mark.asyncio
     @patch("apisbot.bot.handlers.composite_flow.ChartService")
-    async def test_process_location_2_chart_error(self, mock_chart_class):
+    @patch("apisbot.bot.handlers.composite_flow.AstrologicalSubjectFactory")
+    async def test_process_location_2_chart_error(self, mock_subject_factory, mock_chart_class):
         """Test chart generation error for composite."""
         mock_chart_service = MagicMock()
         mock_chart_service.generate_composite = AsyncMock(
@@ -290,7 +371,8 @@ class TestCompositeFlowErrorPaths:
 
     @pytest.mark.asyncio
     @patch("apisbot.bot.handlers.composite_flow.ChartService")
-    async def test_process_location_2_generic_error(self, mock_chart_class):
+    @patch("apisbot.bot.handlers.composite_flow.AstrologicalSubjectFactory")
+    async def test_process_location_2_generic_error(self, mock_subject_factory, mock_chart_class):
         """Test generic error during composite chart generation."""
         mock_chart_service = MagicMock()
         mock_chart_service.generate_composite = AsyncMock(side_effect=ValueError("Some other error"))
@@ -325,7 +407,8 @@ class TestCompositeFlowErrorPaths:
 
     @pytest.mark.asyncio
     @patch("apisbot.bot.handlers.composite_flow.ChartService")
-    async def test_process_location_2_unexpected_error(self, mock_chart_class):
+    @patch("apisbot.bot.handlers.composite_flow.AstrologicalSubjectFactory")
+    async def test_process_location_2_unexpected_error(self, mock_subject_factory, mock_chart_class):
         """Test unexpected exception during composite chart generation."""
         mock_chart_service = MagicMock()
         mock_chart_service.generate_composite = AsyncMock(side_effect=Exception("Unexpected error"))

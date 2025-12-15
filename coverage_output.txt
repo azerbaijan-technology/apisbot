@@ -1,0 +1,206 @@
+[0;36mRunning tests with coverage...[0m
+============================= test session starts ==============================
+platform darwin -- Python 3.12.9, pytest-8.4.2, pluggy-1.6.0 -- /Users/nborodin/apisbot-1/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/nborodin/apisbot-1
+configfile: pyproject.toml
+testpaths: tests
+plugins: mock-3.15.1, asyncio-1.2.0, socket-0.7.0, cov-7.0.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 150 items
+
+tests/test_birth_data.py::TestBirthData::test_birth_data_creation PASSED [  0%]
+tests/test_birth_data.py::TestBirthData::test_birth_data_with_coordinates PASSED [  1%]
+tests/test_birth_data.py::TestBirthData::test_validate_name_valid PASSED [  2%]
+tests/test_birth_data.py::TestBirthData::test_validate_name_invalid PASSED [  2%]
+tests/test_birth_data.py::TestBirthData::test_validate_date_valid PASSED [  3%]
+tests/test_birth_data.py::TestBirthData::test_validate_date_invalid PASSED [  4%]
+tests/test_birth_data.py::TestBirthData::test_validate_date_boundary PASSED [  4%]
+tests/test_chart_flow_handlers.py::TestProcessName::test_process_name_valid PASSED [  5%]
+tests/test_chart_flow_handlers.py::TestProcessName::test_process_name_with_whitespace PASSED [  6%]
+tests/test_chart_flow_handlers.py::TestProcessName::test_process_name_empty PASSED [  6%]
+tests/test_chart_flow_handlers.py::TestProcessName::test_process_name_too_long PASSED [  7%]
+tests/test_chart_flow_handlers.py::TestProcessName::test_process_name_no_letters PASSED [  8%]
+tests/test_chart_flow_handlers.py::TestProcessName::test_process_name_no_text PASSED [  8%]
+tests/test_chart_flow_handlers.py::TestProcessDate::test_process_date_valid PASSED [  9%]
+tests/test_chart_flow_handlers.py::TestProcessDate::test_process_date_invalid_format PASSED [ 10%]
+tests/test_chart_flow_handlers.py::TestProcessDate::test_process_date_no_text PASSED [ 10%]
+tests/test_chart_flow_handlers.py::TestProcessTime::test_process_time_valid PASSED [ 11%]
+tests/test_chart_flow_handlers.py::TestProcessTime::test_process_time_invalid_format PASSED [ 12%]
+tests/test_chart_flow_handlers.py::TestProcessTime::test_process_time_no_text PASSED [ 12%]
+tests/test_chart_flow_handlers.py::TestProcessLocation::test_process_location_success PASSED [ 13%]
+tests/test_chart_flow_handlers.py::TestProcessLocation::test_process_location_too_short PASSED [ 14%]
+tests/test_chart_flow_handlers.py::TestProcessLocation::test_process_location_too_long PASSED [ 14%]
+tests/test_chart_flow_handlers.py::TestProcessLocation::test_process_location_no_text PASSED [ 15%]
+tests/test_chart_flow_handlers.py::TestProcessLocation::test_process_location_geocoding_error PASSED [ 16%]
+tests/test_chart_flow_handlers.py::TestProcessLocation::test_process_location_generic_error PASSED [ 16%]
+tests/test_chart_flow_handlers.py::TestProcessLocation::test_process_location_unexpected_error PASSED [ 17%]
+tests/test_chart_service.py::TestChartService::test_generate_chart_success PASSED [ 18%]
+tests/test_chart_service.py::TestChartService::test_generate_chart_location_error PASSED [ 18%]
+tests/test_chart_service.py::TestChartService::test_generate_chart_generic_error PASSED [ 19%]
+tests/test_chart_service.py::TestChartService::test_generate_composite_success PASSED [ 20%]
+tests/test_chart_service.py::TestChartService::test_generate_composite_first_person_location_error PASSED [ 20%]
+tests/test_chart_service.py::TestChartService::test_generate_composite_second_person_location_error PASSED [ 21%]
+tests/test_chart_service.py::TestChartService::test_validate_location_success PASSED [ 22%]
+tests/test_chart_service.py::TestChartService::test_validate_location_no_coordinates PASSED [ 22%]
+tests/test_chart_service.py::TestChartService::test_validate_location_exception PASSED [ 23%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_name_1_invalid PASSED [ 24%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_name_2_invalid PASSED [ 24%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_date_1_invalid PASSED [ 25%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_date_2_invalid PASSED [ 26%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_time_1_invalid PASSED [ 26%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_time_2_invalid PASSED [ 27%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_location_1_invalid PASSED [ 28%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_location_2_chart_error PASSED [ 28%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_name_1_no_text PASSED [ 29%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_date_1_no_text PASSED [ 30%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_time_1_no_text PASSED [ 30%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_location_1_no_text PASSED [ 31%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_name_2_no_text PASSED [ 32%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_date_2_no_text PASSED [ 32%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_time_2_no_text PASSED [ 33%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_location_2_no_text PASSED [ 34%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_location_2_too_short PASSED [ 34%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_location_2_generic_error PASSED [ 35%]
+tests/test_composite_flow_error_paths.py::TestCompositeFlowErrorPaths::test_process_location_2_unexpected_error PASSED [ 36%]
+tests/test_composite_flow_handlers.py::TestCompositeFlowPerson1::test_process_name_1 PASSED [ 36%]
+tests/test_composite_flow_handlers.py::TestCompositeFlowPerson1::test_process_date_1 PASSED [ 37%]
+tests/test_composite_flow_handlers.py::TestCompositeFlowPerson1::test_process_time_1 PASSED [ 38%]
+tests/test_composite_flow_handlers.py::TestCompositeFlowPerson1::test_process_location_1 PASSED [ 38%]
+tests/test_composite_flow_handlers.py::TestCompositeFlowPerson2::test_process_name_2 PASSED [ 39%]
+tests/test_composite_flow_handlers.py::TestCompositeFlowPerson2::test_process_date_2 PASSED [ 40%]
+tests/test_composite_flow_handlers.py::TestCompositeFlowPerson2::test_process_time_2 PASSED [ 40%]
+tests/test_composite_flow_handlers.py::TestCompositeFlowPerson2::test_process_location_2_success PASSED [ 41%]
+tests/test_converter_service.py::TestConverterService::test_svg_to_png_success PASSED [ 42%]
+tests/test_converter_service.py::TestConverterService::test_svg_to_png_custom_dpi PASSED [ 42%]
+tests/test_converter_service.py::TestConverterService::test_svg_to_png_size_validation PASSED [ 43%]
+tests/test_converter_service.py::TestConverterService::test_svg_to_png_invalid_svg PASSED [ 44%]
+tests/test_converter_service.py::TestConverterService::test_svg_to_png_empty_svg PASSED [ 44%]
+tests/test_converter_service.py::TestConverterService::test_svg_to_png_complex_chart PASSED [ 45%]
+tests/test_converter_service.py::TestConverterService::test_max_size_constants PASSED [ 46%]
+tests/test_converter_service_errors.py::TestConverterServiceErrors::test_svg_to_png_with_mock_large_output PASSED [ 46%]
+tests/test_converter_service_errors.py::TestConverterServiceErrors::test_svg_to_png_returns_none PASSED [ 47%]
+tests/test_converter_service_errors.py::TestConverterServiceErrors::test_svg_to_png_cairosvg_exception PASSED [ 48%]
+tests/test_custom_factories.py::TestCustomFactories::test_create_natal_chart_data_restricted PASSED [ 48%]
+tests/test_custom_factories.py::TestCustomFactories::test_create_natal_chart_data_unrestricted PASSED [ 49%]
+tests/test_custom_factories.py::TestCustomFactories::test_single_chart_aspects PASSED [ 50%]
+tests/test_custom_factories.py::TestCustomFactories::test_single_chart_aspects_no_aspect PASSED [ 50%]
+tests/test_custom_services.py::TestCustomAspectsUtils::test_min_sign_diff PASSED [ 51%]
+tests/test_custom_services.py::TestCustomAspectsUtils::test_get_aspect_basic PASSED [ 52%]
+tests/test_custom_services.py::TestCustomAspectsUtils::test_get_aspect_with_signs PASSED [ 52%]
+tests/test_custom_services.py::TestCustomAspectsUtils::test_get_aspect_all_types PASSED [ 53%]
+tests/test_custom_services.py::TestCustomChartDrawer::test_init_themes PASSED [ 54%]
+tests/test_custom_services.py::TestCustomChartDrawer::test_set_up_theme_custom PASSED [ 54%]
+tests/test_custom_services.py::TestCustomChartDrawer::test_set_up_theme_fallback PASSED [ 55%]
+tests/test_custom_services.py::TestCustomChartDrawer::test_custom_draw_zodiac_slice PASSED [ 56%]
+tests/test_custom_services.py::TestCustomChartDrawer::test_draw_zodiac_circle_slices PASSED [ 56%]
+tests/test_date_parser.py::TestParseDate::test_parse_date_yyyy_mm_dd PASSED [ 57%]
+tests/test_date_parser.py::TestParseDate::test_parse_date_dd_mm_yyyy_slash PASSED [ 58%]
+tests/test_date_parser.py::TestParseDate::test_parse_date_dd_mm_yyyy_dash PASSED [ 58%]
+tests/test_date_parser.py::TestParseDate::test_parse_date_month_dd_yyyy PASSED [ 59%]
+tests/test_date_parser.py::TestParseDate::test_parse_date_dd_month_yyyy PASSED [ 60%]
+tests/test_date_parser.py::TestParseDate::test_parse_date_with_whitespace PASSED [ 60%]
+tests/test_date_parser.py::TestParseDate::test_parse_date_future_raises_error PASSED [ 61%]
+tests/test_date_parser.py::TestParseDate::test_parse_date_too_old_raises_error PASSED [ 62%]
+tests/test_date_parser.py::TestParseDate::test_parse_date_invalid_format PASSED [ 62%]
+tests/test_date_parser.py::TestParseTime::test_parse_time_24h_format PASSED [ 63%]
+tests/test_date_parser.py::TestParseTime::test_parse_time_hour_only_24h PASSED [ 64%]
+tests/test_date_parser.py::TestParseTime::test_parse_time_12h_format_am PASSED [ 64%]
+tests/test_date_parser.py::TestParseTime::test_parse_time_12h_format_pm PASSED [ 65%]
+tests/test_date_parser.py::TestParseTime::test_parse_time_hour_only_12h PASSED [ 66%]
+tests/test_date_parser.py::TestParseTime::test_parse_time_with_whitespace PASSED [ 66%]
+tests/test_date_parser.py::TestParseTime::test_parse_time_invalid_24h_hour PASSED [ 67%]
+tests/test_date_parser.py::TestParseTime::test_parse_time_invalid_24h_minute PASSED [ 68%]
+tests/test_date_parser.py::TestParseTime::test_parse_time_invalid_12h_hour PASSED [ 68%]
+tests/test_date_parser.py::TestParseTime::test_parse_time_invalid_format PASSED [ 69%]
+tests/test_date_parser.py::TestSuggestDateFormat::test_suggest_date_format PASSED [ 70%]
+tests/test_date_parser.py::TestSuggestTimeFormat::test_suggest_time_format PASSED [ 70%]
+tests/test_logging_middleware.py::TestLoggingMiddleware::test_middleware_logs_message PASSED [ 71%]
+tests/test_logging_middleware.py::TestLoggingMiddleware::test_middleware_logs_command PASSED [ 72%]
+tests/test_logging_middleware.py::TestLoggingMiddleware::test_middleware_logs_callback_query PASSED [ 72%]
+tests/test_logging_middleware.py::TestLoggingMiddleware::test_middleware_calls_handler PASSED [ 73%]
+tests/test_logging_middleware.py::TestLoggingMiddleware::test_middleware_logs_errors PASSED [ 74%]
+tests/test_logging_middleware.py::TestLoggingMiddleware::test_middleware_handles_message_without_user PASSED [ 74%]
+tests/test_logging_middleware.py::TestLoggingMiddleware::test_middleware_handles_non_update_event PASSED [ 75%]
+tests/test_main.py::TestMain::test_main_function_setup PASSED            [ 76%]
+tests/test_settings.py::TestSettings::test_settings_from_env PASSED      [ 76%]
+tests/test_settings.py::TestSettings::test_settings_defaults PASSED      [ 77%]
+tests/test_settings.py::TestSettings::test_settings_case_insensitive PASSED [ 78%]
+tests/test_settings.py::TestSettings::test_settings_missing_required PASSED [ 78%]
+tests/test_settings.py::TestSettings::test_settings_extra_fields_ignored PASSED [ 79%]
+tests/test_settings.py::TestSettings::test_get_settings_cached PASSED    [ 80%]
+tests/test_settings.py::TestSettings::test_settings_timeout_as_string PASSED [ 80%]
+tests/test_settings.py::TestSettings::test_settings_validation PASSED    [ 81%]
+tests/test_start_handlers.py::TestStartHandler::test_cmd_start PASSED    [ 82%]
+tests/test_start_handlers.py::TestHelpHandler::test_cmd_help PASSED      [ 82%]
+tests/test_start_handlers.py::TestCancelHandler::test_cmd_cancel_with_active_state PASSED [ 83%]
+tests/test_start_handlers.py::TestCancelHandler::test_cmd_cancel_without_active_state PASSED [ 84%]
+tests/test_start_handlers.py::TestCompositeHandler::test_cmd_composite PASSED [ 84%]
+tests/test_states.py::TestChartFlow::test_chart_flow_states_exist PASSED [ 85%]
+tests/test_states.py::TestChartFlow::test_chart_flow_states_are_state_objects PASSED [ 86%]
+tests/test_states.py::TestChartFlow::test_chart_flow_states_unique PASSED [ 86%]
+tests/test_states.py::TestCompositeFlow::test_composite_flow_states_exist PASSED [ 87%]
+tests/test_states.py::TestCompositeFlow::test_composite_flow_states_are_state_objects PASSED [ 88%]
+tests/test_states.py::TestCompositeFlow::test_composite_flow_states_unique PASSED [ 88%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_name_1 PASSED  [ 89%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_date_1 PASSED  [ 90%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_time_1 PASSED  [ 90%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_location_1 PASSED [ 91%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_name_2 PASSED  [ 92%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_date_2 PASSED  [ 92%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_time_2 PASSED  [ 93%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_location_2_success PASSED [ 94%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_name_1_validations PASSED [ 94%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_date_1_validations PASSED [ 95%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_time_1_validations PASSED [ 96%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_location_1_validations PASSED [ 96%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_location_1_geonames_error PASSED [ 97%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_location_2_error PASSED [ 98%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_name_2_validations PASSED [ 98%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_date_2_validations PASSED [ 99%]
+tests/test_transit_flow.py::TestTransitFlow::test_process_time_2_validations PASSED [100%]
+ERROR: Coverage failure: total of 90 is less than fail-under=95
+
+
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/kerykeion/backword.py:155
+  /Users/nborodin/apisbot-1/.venv/lib/python3.12/site-packages/kerykeion/backword.py:155: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    NOW = _dt.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform darwin, python 3.12.9-final-0 _______________
+
+Name                                                Stmts   Miss Branch BrPart  Cover   Missing
+-----------------------------------------------------------------------------------------------
+src/apisbot/__init__.py                                 0      0      0      0   100%
+src/apisbot/__main__.py                                33      5      2      1    83%   59, 63-66
+src/apisbot/bot/__init__.py                             0      0      0      0   100%
+src/apisbot/bot/handlers/__init__.py                    0      0      0      0   100%
+src/apisbot/bot/handlers/chart_flow.py                 99      2     16      0    98%   226-227
+src/apisbot/bot/handlers/composite_flow.py            181     23     36      5    86%   28-29, 148-174, 199-200, 203-204, 398, 413, 431-432
+src/apisbot/bot/handlers/start.py                      39      4      2      0    90%   114-127
+src/apisbot/bot/handlers/transit_flow.py              180     34     36      7    78%   147-165, 192-193, 196-197, 220-221, 254-255, 286-287, 293-294, 385-403, 412-430
+src/apisbot/bot/middlewares/__init__.py                 2      0      0      0   100%
+src/apisbot/bot/middlewares/logging_middleware.py      22      0      6      1    96%   41->45
+src/apisbot/bot/states/__init__.py                      2      0      0      0   100%
+src/apisbot/bot/states/chart_states.py                 27      0      0      0   100%
+src/apisbot/config/__init__.py                          2      0      0      0   100%
+src/apisbot/config/settings.py                         10      0      0      0   100%
+src/apisbot/models/__init__.py                          2      0      0      0   100%
+src/apisbot/models/birth_data.py                       21      0      2      0   100%
+src/apisbot/services/__init__.py                        4      0      0      0   100%
+src/apisbot/services/chart_service.py                  94     16      6      1    83%   26-27, 204-205, 209-248
+src/apisbot/services/converter_service.py              24      0      6      0   100%
+src/apisbot/services/custom_aspects_factory.py         38      2     10      2    92%   45, 70
+src/apisbot/services/custom_aspects_utils.py           27      0     16      0   100%
+src/apisbot/services/custom_chart_data_factory.py      16      0      2      0   100%
+src/apisbot/services/custom_chart_drawer.py            39      0     10      1    98%   27->37
+src/apisbot/services/date_parser.py                    57      1     28      1    98%   112
+-----------------------------------------------------------------------------------------------
+TOTAL                                                 919     87    178     19    90%
+Coverage HTML written to dir htmlcov
+Coverage XML written to file coverage.xml
+FAIL Required test coverage of 95% not reached. Total coverage: 89.61%
+======================== 150 passed, 1 warning in 5.53s ========================
+make: *** [test] Error 1

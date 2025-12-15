@@ -73,7 +73,8 @@ class TestCompositeFlowPerson1:
         state.set_state.assert_called_once_with(CompositeFlow.waiting_for_location_1)
 
     @pytest.mark.asyncio
-    async def test_process_location_1(self):
+    @patch("apisbot.bot.handlers.composite_flow.AstrologicalSubjectFactory")
+    async def test_process_location_1(self, mock_subject_factory):
         """Test location input for person 1."""
         message = MagicMock(spec=Message)
         message.text = "New York"
@@ -83,6 +84,9 @@ class TestCompositeFlowPerson1:
         state = MagicMock(spec=FSMContext)
         state.update_data = AsyncMock()
         state.set_state = AsyncMock()
+
+        # Mock successful subject creation
+        mock_subject_factory.from_birth_data.return_value = MagicMock()
 
         await process_location_1(message, state)
 
@@ -145,7 +149,8 @@ class TestCompositeFlowPerson2:
     @pytest.mark.asyncio
     @patch("apisbot.bot.handlers.composite_flow.ChartService")
     @patch("apisbot.bot.handlers.composite_flow.ConverterService")
-    async def test_process_location_2_success(self, mock_converter_class, mock_chart_class):
+    @patch("apisbot.bot.handlers.composite_flow.AstrologicalSubjectFactory")
+    async def test_process_location_2_success(self, mock_subject_factory, mock_converter_class, mock_chart_class):
         """Test successful composite chart generation."""
         # Setup mocks
         mock_chart_service = MagicMock()

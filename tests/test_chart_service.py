@@ -14,8 +14,8 @@ class TestChartService:
 
     @pytest.mark.asyncio
     @patch("apisbot.services.chart_service.AstrologicalSubjectFactory")
-    @patch("apisbot.services.chart_service.ChartDataFactory")
-    @patch("apisbot.services.chart_service.ChartDrawer")
+    @patch("apisbot.services.chart_service.CustomChartDataFactory")
+    @patch("apisbot.services.chart_service.CustomChartDrawer")
     async def test_generate_chart_success(self, mock_drawer_class, mock_chart_data_factory, mock_subject_factory):
         """Test successful chart generation."""
         # Setup mocks
@@ -58,9 +58,12 @@ class TestChartService:
             minute=30,
             city="New York",
             nation=" ",
+            houses_system_identifier="W",
         )
-        mock_chart_data_factory.create_natal_chart_data.assert_called_once_with(mock_subject)
-        mock_drawer_class.assert_called_once_with(mock_chart_data)
+        mock_chart_data_factory.create_natal_chart_data.assert_called_once()
+        args, kwargs = mock_chart_data_factory.create_natal_chart_data.call_args
+        assert args[0] == mock_subject
+        mock_drawer_class.assert_called_once_with(chart_data=mock_chart_data, theme="my-theme")
         mock_drawer.generate_wheel_only_svg_string.assert_called_once_with(minify=True, remove_css_variables=True)
 
     @pytest.mark.asyncio
@@ -97,12 +100,54 @@ class TestChartService:
             await ChartService.generate_chart(birth_data)
 
     @pytest.mark.asyncio
+    @patch("apisbot.services.chart_service.CustomChartDrawer")
+    @patch("apisbot.services.chart_service.ChartDataFactory")
+    async def test_generate_transit_success(self, mock_data_factory, mock_drawer_class):
+        """Test successful transit chart generation."""
+        mock_subject_1 = MagicMock()
+        mock_subject_2 = MagicMock()
+        
+        # Mock data
+        mock_chart_data = MagicMock()
+        mock_data_factory.create_transit_chart_data.return_value = mock_chart_data
+        
+        # Mock drawer
+        mock_drawer = MagicMock()
+        mock_drawer.generate_wheel_only_svg_string.return_value = "<svg>transit</svg>"
+        mock_drawer_class.return_value = mock_drawer
+        
+        result = await ChartService.generate_transit(mock_subject_1, mock_subject_2)
+        
+        assert result == "<svg>transit</svg>"
+        mock_data_factory.create_transit_chart_data.assert_called_once()
+        mock_drawer_class.assert_called_once_with(chart_data=mock_chart_data, theme="my-theme")
+
+    @pytest.mark.asyncio
+    @patch("apisbot.services.chart_service.CustomChartDrawer")
+    @patch("apisbot.services.chart_service.ChartDataFactory")
+    async def test_generate_transit_error(self, mock_data_factory, mock_drawer_class):
+        """Test transit chart generation error."""
+        mock_subject_1 = MagicMock()
+        mock_subject_2 = MagicMock()
+        
+        mock_data_factory.create_transit_chart_data.side_effect = Exception("Generation failed")
+        
+        with pytest.raises(Exception, match="Generation failed"):
+            await ChartService.generate_transit(mock_subject_1, mock_subject_2)
+
+    @pytest.mark.asyncio
+    @patch("apisbot.services.chart_service.ReportGenerator")
     @patch("apisbot.services.chart_service.CompositeSubjectFactory")
     @patch("apisbot.services.chart_service.AstrologicalSubjectFactory")
     @patch("apisbot.services.chart_service.ChartDataFactory")
-    @patch("apisbot.services.chart_service.ChartDrawer")
+    @patch("apisbot.services.chart_service.CustomChartDrawer")
     async def test_generate_composite_success(
-        self, mock_drawer_class, mock_chart_data_factory, mock_subject_factory, mock_composite_factory_class
+        self,
+        mock_drawer_class,
+        mock_chart_data_factory,
+        mock_subject_factory,
+        mock_composite_factory_class,
+        mock_report_generator_class,
     ):
         """Test successful composite chart generation."""
         # Setup mocks for subjects
@@ -152,6 +197,9 @@ class TestChartService:
         assert result == "<svg>composite chart</svg>"
         assert birth_data_1.latitude == 40.7128
         assert birth_data_2.latitude == 51.5074
+        
+        # Check that from_birth_data was called for both
+        assert mock_subject_factory.from_birth_data.call_count == 2
 
     @pytest.mark.asyncio
     @patch("apisbot.services.chart_service.AstrologicalSubjectFactory")

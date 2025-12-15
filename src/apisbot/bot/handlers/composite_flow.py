@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, Message
 from kerykeion import AstrologicalSubjectFactory, KerykeionException
 
+from ...models import BirthData
 from ...services import ChartService, ConverterService, parse_date, parse_time
 from ..states import CompositeFlow
 
@@ -316,23 +317,24 @@ async def process_location_2(message: Message, state: FSMContext):
         # Get all stored data
         data = await state.get_data()
 
-        subject_1 = data["subject_1"]
-
-        subject_2 = AstrologicalSubjectFactory.from_birth_data(
+        # Create BirthData objects
+        birth_data_1 = BirthData(
+            name=data["name_1"],
+            birth_date=data["birth_date_1"],
+            birth_time=data["birth_time_1"],
+            location=data.get("location_1", ""), # Fallback if not set (should be set)
+        )
+        
+        birth_data_2 = BirthData(
             name=data["name_2"],
-            year=data["birth_date_2"].year,
-            month=data["birth_date_2"].month,
-            day=data["birth_date_2"].day,
-            hour=data["birth_time_2"].hour,
-            minute=data["birth_time_2"].minute,
-            city=location,
-            nation=" ",
-            houses_system_identifier="W",
+            birth_date=data["birth_date_2"],
+            birth_time=data["birth_time_2"],
+            location=location,
         )
 
         # Generate composite chart
         chart_service = ChartService()
-        svg_chart = await chart_service.generate_composite(subject_1, subject_2)
+        svg_chart = await chart_service.generate_composite(birth_data_1, birth_data_2)
 
         logger.info(
             f"User {message.from_user.id if message.from_user else 'Unknown'}: composite chart generated successfully"
@@ -352,15 +354,15 @@ async def process_location_2(message: Message, state: FSMContext):
             photo=chart_file,
             caption=(
                 f"✨ <b>Composite Chart</b> ✨\n\n"
-                f"Between {subject_1.name} and {subject_2.name}\n\n"
+                f"Between {birth_data_1.name} and {birth_data_2.name}\n\n"
                 f"<b>First person:</b>\n"
                 f"Born: {data['birth_date_1'].strftime('%B %d, %Y')} "
                 f"at {data['birth_date_1'].strftime('%H:%M')}\n"
-                f"Location: {subject_1.city}\n\n"
+                f"Location: {birth_data_1.location}\n\n"
                 f"<b>Second person:</b>\n"
                 f"Born: {data['birth_date_2'].strftime('%B %d, %Y')} "
                 f"at {data['birth_time_2'].strftime('%H:%M')}\n"
-                f"Location: {subject_2.city}\n\n"
+                f"Location: {birth_data_2.location}\n\n"
                 "All your data has been securely deleted. 🔒\n\n"
                 "Want to generate another chart? Send /start or /composite"
             ),

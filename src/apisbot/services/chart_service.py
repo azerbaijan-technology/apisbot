@@ -1,15 +1,16 @@
 import logging
 from typing import List
 
+import kerykeion.composite_subject_factory
 from kerykeion import (
     AstrologicalSubject,
     AstrologicalSubjectFactory,
     ChartDataFactory,
     CompositeSubjectFactory,
+    ReportGenerator,
 )
 from kerykeion.schemas import ActiveAspect, AstrologicalPoint
 from kerykeion.utilities import AstrologicalSubjectModel
-import kerykeion.composite_subject_factory
 
 from ..models import BirthData
 from .custom_chart_data_factory import CustomChartDataFactory
@@ -19,12 +20,15 @@ logger = logging.getLogger(__name__)
 
 _original_circular_mean = kerykeion.composite_subject_factory.circular_mean
 
+
 def _patched_circular_mean(p1, p2):
 
     result = _original_circular_mean(p1, p2)
     return result % 360
 
+
 kerykeion.composite_subject_factory.circular_mean = _patched_circular_mean
+
 
 class ChartService:
     """Service for generating natal charts using kerykeion.
@@ -117,9 +121,48 @@ class ChartService:
             raise ValueError(f"Failed to generate natal chart: {str(e)}") from e
 
     @staticmethod
-    async def generate_composite(subject_1: AstrologicalSubjectModel, subject_2: AstrologicalSubjectModel) -> str:
+    async def generate_composite(birth_data_1: BirthData, birth_data_2: BirthData) -> str:
         try:
             logger.info("Generating composite chart (no PII logged)")
+
+            # Create astrological subjects (geonames lookup happens here)
+            try:
+                subject_1 = AstrologicalSubjectFactory.from_birth_data(
+                    name=birth_data_1.name,
+                    year=birth_data_1.birth_date.year,
+                    month=birth_data_1.birth_date.month,
+                    day=birth_data_1.birth_date.day,
+                    hour=birth_data_1.birth_time.hour,
+                    minute=birth_data_1.birth_time.minute,
+                    city=birth_data_1.location,
+                    nation=birth_data_1.nation,
+                    houses_system_identifier="W",
+                )
+                # Update birth_data with geocoded info
+                birth_data_1.latitude = subject_1.lat
+                birth_data_1.longitude = subject_1.lng
+                birth_data_1.timezone = subject_1.tz_str
+            except Exception as e:
+                raise ValueError(f"Could not find location for first person: {birth_data_1.location}") from e
+
+            try:
+                subject_2 = AstrologicalSubjectFactory.from_birth_data(
+                    name=birth_data_2.name,
+                    year=birth_data_2.birth_date.year,
+                    month=birth_data_2.birth_date.month,
+                    day=birth_data_2.birth_date.day,
+                    hour=birth_data_2.birth_time.hour,
+                    minute=birth_data_2.birth_time.minute,
+                    city=birth_data_2.location,
+                    nation=birth_data_2.nation,
+                    houses_system_identifier="W",
+                )
+                # Update birth_data with geocoded info
+                birth_data_2.latitude = subject_2.lat
+                birth_data_2.longitude = subject_2.lng
+                birth_data_2.timezone = subject_2.tz_str
+            except Exception as e:
+                raise ValueError(f"Could not find location for second person: {birth_data_2.location}") from e
 
             active_points: List[AstrologicalPoint] = [
                 "Sun",
@@ -149,10 +192,15 @@ class ChartService:
 
             svg_chart = drawer.generate_wheel_only_svg_string(minify=True, remove_css_variables=True)
 
+            report = ReportGenerator(chart_data)
+            report.print_report()
+
             logger.info("Composite chart generation successful")
             return svg_chart
 
         except Exception as e:
+            if isinstance(e, ValueError):
+                raise
             logger.error(f"Composite chart generation failed: {type(e).__name__}: {str(e)}")
             raise
 
