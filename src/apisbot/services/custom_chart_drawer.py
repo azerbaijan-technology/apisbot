@@ -182,7 +182,7 @@ def _patched_draw_degree_ring(
         # Determine tick length based on degree
         # logic from kerykeion_chart_svg.py snippet
         if i % 30 == 0:
-            height = 20  # Longest tick
+            height = 36  # Longest tick
             opacity = 1
             width = 1.5
         elif i % 10 == 0:
@@ -245,7 +245,9 @@ def _patched_draw_houses_cusps_and_text_number(
     xr = 12
 
     for i in range(xr):
-        dropin, roff, t_roff = (160, 72, 36) if chart_type in ["Transit", "Synastry", "DualReturnChart"] else (c3, c1, False)
+        # c3 (120) - начало линии (центральный круг).
+        # roff = 36 - конец линии (2-й внутренний круг, перед зодиаком).
+        dropin, roff, t_roff = (160, 72, 36) if chart_type in ["Transit", "Synastry", "DualReturnChart"] else (c3, 36, False)
         offset = (int(first_subject_houses_list[int(xr / 2)].abs_pos) / -1) + int(first_subject_houses_list[i].abs_pos)
 
         x1 = sliceToX(0, (r - dropin), offset) + dropin
@@ -300,7 +302,7 @@ def _patched_draw_houses_cusps_and_text_number(
 
         path += f'<g kr:node="Cusp" kr:absoluteposition="{first_subject_houses_list[i].abs_pos}" kr:signposition="{first_subject_houses_list[i].position}" kr:sing="{first_subject_houses_list[i].sign}" kr:slug="{first_subject_houses_list[i].name}">'
         # No dashed array, solidly opaque
-        path += f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" style="stroke: {linecolor}; stroke-width: {CUSTOM_RING_WIDTH}; stroke-opacity: 1;"/>'
+        path += f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" style="stroke: {linecolor}; stroke-width: {CUSTOM_RING_WIDTH}; stroke-opacity: 0.4;"/>'
         path += "</g>"
 
         path += '<g kr:node="HouseNumber">'
