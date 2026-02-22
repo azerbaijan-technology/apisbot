@@ -3,7 +3,7 @@ from typing import Optional, Union, get_args
 
 from kerykeion.charts.chart_drawer import ChartDrawer
 import kerykeion.charts.chart_drawer
-from kerykeion.charts.charts_utils import sliceToX, sliceToY
+from kerykeion.charts.charts_utils import sliceToX, sliceToY, degreeDiff
 from kerykeion.schemas import ChartType, Sign, KerykeionException
 
 # Список встроенных тем (копия из KerykeionChartTheme)
@@ -224,3 +224,89 @@ kerykeion.charts.chart_drawer.draw_first_circle = _patched_draw_first_circle
 kerykeion.charts.chart_drawer.draw_second_circle = _patched_draw_second_circle
 kerykeion.charts.chart_drawer.draw_third_circle = _patched_draw_third_circle
 kerykeion.charts.chart_drawer.draw_degree_ring = _patched_draw_degree_ring
+
+def _patched_draw_houses_cusps_and_text_number(
+    r: Union[int, float],
+    first_subject_houses_list: list,
+    standard_house_cusp_color: str,
+    first_house_color: str,
+    tenth_house_color: str,
+    seventh_house_color: str,
+    fourth_house_color: str,
+    c1: Union[int, float],
+    c3: Union[int, float],
+    chart_type: ChartType,
+    second_subject_houses_list: Union[list, None] = None,
+    transit_house_cusp_color: Union[str, None] = None,
+    external_view: bool = False,
+) -> str:
+    """Overridden drawing of house cusps to remove dashes and enforce a solid black line."""
+    path = ""
+    xr = 12
+
+    for i in range(xr):
+        dropin, roff, t_roff = (160, 72, 36) if chart_type in ["Transit", "Synastry", "DualReturnChart"] else (c3, c1, False)
+        offset = (int(first_subject_houses_list[int(xr / 2)].abs_pos) / -1) + int(first_subject_houses_list[i].abs_pos)
+
+        x1 = sliceToX(0, (r - dropin), offset) + dropin
+        y1 = sliceToY(0, (r - dropin), offset) + dropin
+        x2 = sliceToX(0, r - roff, offset) + roff
+        y2 = sliceToY(0, r - roff, offset) + roff
+
+        next_index = (i + 1) % xr
+        text_offset = offset + int(
+            degreeDiff(first_subject_houses_list[next_index].abs_pos, first_subject_houses_list[i].abs_pos) / 2
+        )
+
+        # Force line to be black
+        linecolor = "#000000"
+
+        if chart_type in ["Transit", "Synastry", "DualReturnChart"]:
+            if second_subject_houses_list is None or transit_house_cusp_color is None:
+                raise KerykeionException("second_subject_houses_list_ut or transit_house_cusp_color is None")
+
+            zeropoint = 360 - first_subject_houses_list[6].abs_pos
+            t_offset = (zeropoint + second_subject_houses_list[i].abs_pos) % 360
+
+            t_x1 = sliceToX(0, (r - t_roff), t_offset) + t_roff
+            t_y1 = sliceToY(0, (r - t_roff), t_offset) + t_roff
+            t_x2 = sliceToX(0, r, t_offset)
+            t_y2 = sliceToY(0, r, t_offset)
+
+            t_text_offset = t_offset + int(
+                degreeDiff(second_subject_houses_list[next_index].abs_pos, second_subject_houses_list[i].abs_pos) / 2
+            )
+            t_linecolor = "#000000"
+            xtext = sliceToX(0, (r - 8), t_text_offset) + 8
+            ytext = sliceToY(0, (r - 8), t_text_offset) + 8
+
+            fill_opacity = "0" if chart_type == "Transit" else ".4"
+            path += '<g kr:node="HouseNumber">'
+            path += f'<text style="fill: var(--kerykeion-chart-color-house-number); fill-opacity: {fill_opacity}; font-size: 14px"><tspan x="{xtext - 3}" y="{ytext + 3}">{i + 1}</tspan></text>'
+            path += "</g>"
+
+            stroke_opacity = "0" if chart_type == "Transit" else ".3"
+            path += f'<g kr:node="Cusp" kr:absoluteposition="{second_subject_houses_list[i].abs_pos}" kr:signposition="{second_subject_houses_list[i].position}" kr:sing="{second_subject_houses_list[i].sign}" kr:slug="{second_subject_houses_list[i].name}">'
+            path += f"<line x1='{t_x1}' y1='{t_y1}' x2='{t_x2}' y2='{t_y2}' style='stroke: {t_linecolor}; stroke-width: {CUSTOM_RING_WIDTH}; stroke-opacity:{stroke_opacity};'/>"
+            path += "</g>"
+
+        dropin_map = {"Transit": 84, "Synastry": 84, "DualReturnChart": 84}
+        if external_view:
+            dropin = 100
+        else:
+            dropin = dropin_map.get(chart_type, 48)
+        xtext = sliceToX(0, (r - dropin), text_offset) + dropin
+        ytext = sliceToY(0, (r - dropin), text_offset) + dropin
+
+        path += f'<g kr:node="Cusp" kr:absoluteposition="{first_subject_houses_list[i].abs_pos}" kr:signposition="{first_subject_houses_list[i].position}" kr:sing="{first_subject_houses_list[i].sign}" kr:slug="{first_subject_houses_list[i].name}">'
+        # No dashed array, solidly opaque
+        path += f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" style="stroke: {linecolor}; stroke-width: {CUSTOM_RING_WIDTH}; stroke-opacity: 1;"/>'
+        path += "</g>"
+
+        path += '<g kr:node="HouseNumber">'
+        path += f'<text style="fill: var(--kerykeion-chart-color-house-number); fill-opacity: .6; font-size: 14px"><tspan x="{xtext - 3}" y="{ytext + 3}">{i + 1}</tspan></text>'
+        path += "</g>"
+
+    return path
+
+kerykeion.charts.chart_drawer.draw_houses_cusps_and_text_number = _patched_draw_houses_cusps_and_text_number
